@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { CATEGORIES, categoriesFor, isCategoryId } from "../src/config/aircraft-types.js";
+import { CATEGORIES, TYPE_NAMES, categoriesFor, isCategoryId } from "../src/config/aircraft-types.js";
 
 describe("categoriesFor", () => {
   it("puts the A380 in every airframe category it belongs to", () => {
@@ -77,6 +77,45 @@ describe("isCategoryId", () => {
     expect(isCategoryId("WIDEBODY")).toBe(true);
     expect(isCategoryId("widebody")).toBe(false);
     expect(isCategoryId("DROP TABLE")).toBe(false);
+  });
+});
+
+describe("TYPE_NAMES", () => {
+  it("names the codes that actually show up on a board", () => {
+    expect(TYPE_NAMES.E75S).toBe("Embraer ERJ-175SU");
+    expect(TYPE_NAMES.E75L).toBe("Embraer ERJ-175LR");
+    expect(TYPE_NAMES.A321).toBe("Airbus A321");
+    expect(TYPE_NAMES.A21N).toBe("Airbus A321neo");
+    expect(TYPE_NAMES.B38M).toBe("Boeing 737 MAX 8");
+    expect(TYPE_NAMES.CRJ9).toBe("Bombardier CRJ900");
+    expect(TYPE_NAMES.DH8D).toBe("De Havilland Dash 8-400");
+    expect(TYPE_NAMES.C172).toBe("Cessna 172 Skyhawk");
+    expect(TYPE_NAMES.BCS3).toBe("Airbus A220-300");
+  });
+
+  it("names every type the taxonomy classifies", () => {
+    // Adding a code to a category without naming it leaves a row reading "B77X"
+    // with no subtitle. Catch that here rather than on the board.
+    const classified = [...new Set(CATEGORIES.flatMap((category) => category.types))];
+    const unnamed = classified.filter((type) => !TYPE_NAMES[type]);
+    expect(unnamed).toEqual([]);
+  });
+
+  it("uses well-formed uppercase codes as keys", () => {
+    for (const key of Object.keys(TYPE_NAMES)) {
+      expect(key, `${key} is not a plausible type code`).toMatch(/^[A-Z0-9]{2,4}$/);
+    }
+  });
+
+  it("has no blank or placeholder names", () => {
+    for (const [code, name] of Object.entries(TYPE_NAMES)) {
+      expect(name.trim(), `${code} has an empty name`).not.toBe("");
+      expect(name, `${code} still reads as a raw code`).not.toBe(code);
+    }
+  });
+
+  it("leaves unknown codes unnamed rather than inventing something", () => {
+    expect(TYPE_NAMES.ZZZZ).toBeUndefined();
   });
 });
 

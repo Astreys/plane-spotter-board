@@ -191,9 +191,22 @@ describe("the board", () => {
     expect(rows[1]!.classes()).not.toContain("row--rare");
   });
 
-  it("shows the raw type code for an aircraft we cannot name", async () => {
+  it("leads with the aircraft name and demotes the ICAO code", async () => {
     const { wrapper } = await mountBoard();
-    expect(wrapper.findAll("li.row")[1]!.text()).toContain("E75L");
+    const row = wrapper.findAll("li.row")[0]!;
+    expect(row.find(".row__name").text()).toBe("Airbus A380-800");
+    expect(row.find(".row__name").classes()).not.toContain("row__name--code");
+    // The code is still there, just no longer the headline.
+    expect(row.find(".row__code").text()).toBe("A388");
+  });
+
+  it("falls back to the raw type code for an aircraft we cannot name", async () => {
+    const { wrapper } = await mountBoard();
+    const row = wrapper.findAll("li.row")[1]!;
+    expect(row.find(".row__name").text()).toBe("E75L");
+    expect(row.find(".row__name").classes()).toContain("row__name--code");
+    // Nothing to demote — the code is already the headline, so it is not repeated.
+    expect(row.find(".row__code").exists()).toBe(false);
   });
 
   it("shows a chip per category with its count", async () => {

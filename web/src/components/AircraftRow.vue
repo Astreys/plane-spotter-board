@@ -35,6 +35,20 @@ const descent = computed(() => {
   if (rate > 200) return "climbing";
   return "level";
 });
+
+/**
+ * The name leads the row. An unmapped code has no name to lead with, so the raw
+ * code takes the headline instead — never a placeholder, and never nothing.
+ */
+const headline = computed(
+  () => props.aircraft.typeName ?? props.aircraft.type ?? "Unknown type",
+);
+
+/** True when the headline is a raw code, which reads better in monospace. */
+const headlineIsCode = computed(() => !props.aircraft.typeName && !!props.aircraft.type);
+
+/** Only worth repeating in the metadata when the headline is the name. */
+const code = computed(() => (props.aircraft.typeName ? props.aircraft.type : null));
 </script>
 
 <template>
@@ -48,7 +62,9 @@ const descent = computed(() => {
 
     <div class="row__body">
       <div class="row__top">
-        <span class="row__type">{{ aircraft.type ?? "?" }}</span>
+        <span class="row__name" :class="{ 'row__name--code': headlineIsCode }">
+          {{ headline }}
+        </span>
         <span class="row__callsign">{{ aircraft.callsign ?? "no callsign" }}</span>
         <span v-for="badge in badges" :key="badge" class="row__badge" :data-badge="badge">
           {{ LABELS[badge] }}
@@ -56,13 +72,12 @@ const descent = computed(() => {
       </div>
 
       <div class="row__meta">
+        <span v-if="code" class="row__code">{{ code }}</span>
         <span v-if="aircraft.registration">{{ aircraft.registration }}</span>
         <span>{{ altitude }}</span>
         <span>{{ aircraft.distanceNm }} nm {{ aircraft.fromDirection }}</span>
         <span v-if="descent" class="row__descent" :data-state="descent">{{ descent }}</span>
       </div>
-
-      <div v-if="aircraft.typeName" class="row__typename">{{ aircraft.typeName }}</div>
     </div>
   </li>
 </template>
@@ -116,19 +131,32 @@ const descent = computed(() => {
   gap: 0.4rem;
 }
 
-.row__type {
-  font-family: var(--mono);
+.row__name {
   font-size: 0.95rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+/* An unmapped code is the headline; monospace signals it is a code, not a name. */
+.row__name--code {
+  font-family: var(--mono);
   font-weight: 600;
   letter-spacing: 0.02em;
 }
 
 .row__callsign {
-  font-size: 0.95rem;
-  color: var(--text);
+  font-size: 0.88rem;
+  color: var(--muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.row__code {
+  font-family: var(--mono);
+  letter-spacing: 0.02em;
+  color: var(--muted-2);
 }
 
 .row__badge {
@@ -160,12 +188,4 @@ const descent = computed(() => {
   color: var(--good);
 }
 
-.row__typename {
-  margin-top: 0.15rem;
-  font-size: 0.72rem;
-  color: var(--muted-2);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 </style>
