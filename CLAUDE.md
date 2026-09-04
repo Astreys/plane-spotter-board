@@ -29,7 +29,7 @@ with the raw code visible.
 
 ```bash
 npm run dev      # API on :8787, frontend on :5173 with /api proxied
-npm test         # 101 tests, server + web
+npm test         # 129 tests, server + web
 npm run build    # typecheck both, compile server, bundle frontend
 ```
 
@@ -56,3 +56,26 @@ high-elevation airports and there is a test for it.
 Multiple airports on screen at once, accounts, saved filters, notifications,
 history, departures, map view. Push back if these arrive before the core board is
 solid.
+
+## Upstreams and their gates
+
+Three upstreams, three different services:
+
+- **ADS-B aggregators** (adsb.lol / .fi / .one) — the board itself. One shared
+  `RateGate` in `server/src/adsb/client.ts`, one request per second across every
+  poller. This is the invariant above; do not add a second path to it.
+- **adsbdb.com** — flight routes by callsign. Its own gate in
+  `server/src/flightroute/client.ts`. Looked up in the background and cached, so
+  the poll never waits on it.
+- **planespotters.net** — photos. Cached proxy in `server/src/routes/photos.ts`.
+
+A new upstream gets its own gate. Sharing the aggregators' gate would starve the
+board to feed a decoration.
+
+## Route data is approximate
+
+`arrivesHere` on a route is false whenever the scheduled destination is not the
+airport being watched, and that is common — the route database stores one
+canonical city pair per callsign. Never render a route as "where this aircraft
+came from" without checking it. `arrivesAt()` in `server/src/domain/route.ts` is
+the single place that decides, and the UI dims and marks the rest.

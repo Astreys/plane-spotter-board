@@ -50,6 +50,12 @@ export const config = {
   minRequestSpacingMs: num(process.env.MIN_REQUEST_SPACING_MS, 1_200),
   requestTimeoutMs: num(process.env.REQUEST_TIMEOUT_MS, 8_000),
 
+  /**
+   * Spacing for route lookups. A separate service from the aggregators with its
+   * own limit, so it gets its own budget rather than sharing theirs.
+   */
+  routeRequestSpacingMs: num(process.env.ROUTE_REQUEST_SPACING_MS, 350),
+
   userAgent:
     process.env.USER_AGENT ??
     "plane-spotter-board/0.1 (+https://github.com/Astreys/plane-spotter-board)",

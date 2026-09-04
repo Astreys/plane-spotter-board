@@ -14,6 +14,8 @@ import type { Airport } from "../config/airports.js";
 import { config } from "../config/env.js";
 import { countByCategory } from "../domain/filters.js";
 import { selectInbound } from "../domain/inbound.js";
+import { arrivesAt } from "../domain/route.js";
+import type { RouteResolver } from "../flightroute/resolver.js";
 import type { InboundAircraft, InboundSnapshot } from "../types.js";
 
 interface Cached {
@@ -43,6 +45,7 @@ export class AirportPoller extends EventEmitter {
   constructor(
     readonly airport: Airport,
     private readonly log: PollerLogger,
+    private readonly routes?: RouteResolver,
   ) {
     super();
     // SSE clients each add a listener; the default cap of 10 is far too low.
@@ -89,7 +92,7 @@ export class AirportPoller extends EventEmitter {
         startIndex: this.preferredHost,
       });
 
-      const aircraft = selectInbound(result.snapshot.ac, this.airport);
+      const aircraft = this.withRoutes(selectInbound(result.snapshot.ac, this.airport));
       this.cache = {
         aircraft,
         counts: countByCategory(aircraft),
@@ -129,6 +132,26 @@ export class AirportPoller extends EventEmitter {
     } finally {
       this.inFlight = false;
     }
+  }
+
+  /**
+   * Attach whatever routes are already cached, and hand the rest to the resolver
+   * to look up in the background. Deliberately not awaited: a slow route database
+   * must never delay the board, so a newly seen aircraft simply gains its route on
+   * the next tick.
+   */
+  private withRoutes(aircraft: InboundAircraft[]): InboundAircraft[] {
+    const routes = this.routes;
+    if (!routes) return aircraft;
+
+    const enriched = aircraft.map((ac) => {
+      const route = routes.get(ac.callsign);
+      if (!route) return { ...ac, route: null };
+      return { ...ac, route: { ...route, arrivesHere: arrivesAt(route, this.airport) } };
+    });
+
+    routes.ensure(aircraft.map((ac) => ac.callsign));
+    return enriched;
   }
 
   /**

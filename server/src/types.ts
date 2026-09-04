@@ -2,6 +2,39 @@ import type { CategoryId, GroupId } from "./config/aircraft-types.js";
 
 export type { CategoryId, GroupId };
 
+/** An airport at one end of a flight. Codes can be missing; both never are. */
+export interface RouteAirport {
+  iata: string | null;
+  icao: string | null;
+  name: string | null;
+  city: string | null;
+  countryIso: string | null;
+}
+
+/**
+ * Where a flight is coming from and going to, by callsign.
+ *
+ * This is the callsign's *scheduled* route, not observed track history. For an
+ * arrival the destination is normally the airport being watched; when it is not,
+ * the aircraft is likely operating a different leg under the same callsign, so
+ * the UI shows what the schedule says rather than guessing.
+ */
+export interface FlightRoute {
+  origin: RouteAirport | null;
+  destination: RouteAirport | null;
+  airline: string | null;
+  callsignIata: string | null;
+  /**
+   * True when the scheduled destination is the airport being watched.
+   *
+   * Often it is not: the route database keys on callsign and returns a typical
+   * city pair, which may be a different leg, a different day's schedule, or an
+   * aircraft merely passing overhead. When this is false the pair is still shown,
+   * but marked, because presenting it as this arrival's route would be a lie.
+   */
+  arrivesHere: boolean;
+}
+
 /** One aircraft on the board. Every optional field really can be missing. */
 export interface InboundAircraft {
   /** ICAO 24-bit address, lowercase hex. The only field we can rely on. */
@@ -30,6 +63,8 @@ export interface InboundAircraft {
   minutesOut: number | null;
 
   categories: CategoryId[];
+  /** Scheduled origin and destination. Null until the lookup lands, or if there is none. */
+  route: FlightRoute | null;
   /** Seconds since the position fix, straight from the feed. */
   seenPosSec: number;
 }
@@ -76,6 +111,8 @@ export interface CategoryDto {
 }
 
 export interface ConfigDto {
+  /** Every upstream we take data from, for the credits line in the footer. */
+  sources: Array<{ label: string; url: string }>;
   airports: Array<{
     icao: string;
     iata: string;
