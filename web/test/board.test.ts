@@ -12,6 +12,11 @@ import type { ConfigDto, InboundSnapshot } from "../src/api";
 const config: ConfigDto = {
   upcomingEnabled: false,
   upcomingCategories: ["DOUBLE_DECK", "QUAD", "WIDEBODY"],
+  sources: [
+    { label: "ADS-B data by adsb.lol", url: "https://adsb.lol" },
+    { label: "Routes by adsbdb.com", url: "https://www.adsbdb.com" },
+    { label: "Photos by planespotters.net", url: "https://www.planespotters.net" },
+  ],
   airports: [{ icao: "CYYZ", iata: "YYZ", name: "Toronto Pearson International", city: "Toronto", tracked: true }],
   defaultAirport: "CYYZ",
   groups: [
@@ -72,6 +77,19 @@ const snapshot: InboundSnapshot = {
       fromDirection: "SW",
       minutesOut: 6,
       categories: ["WIDEBODY", "RARE"],
+      route: {
+        origin: { iata: "DXB", icao: "OMDB", name: "Dubai International", city: "Dubai", countryIso: "AE" },
+        destination: {
+          iata: "YYZ",
+          icao: "CYYZ",
+          name: "Lester B. Pearson International",
+          city: "Toronto",
+          countryIso: "CA",
+        },
+        airline: "Emirates",
+        callsignIata: "EK203",
+        arrivesHere: true,
+      },
       seenPosSec: 0.4,
     },
     {
@@ -91,6 +109,14 @@ const snapshot: InboundSnapshot = {
       fromDirection: "WSW",
       minutesOut: 8,
       categories: ["OTHER"],
+      // The route database returned a city pair that does not end here.
+      route: {
+        origin: { iata: "JFK", icao: "KJFK", name: null, city: "New York", countryIso: "US" },
+        destination: { iata: "CLT", icao: "KCLT", name: null, city: "Charlotte", countryIso: "US" },
+        airline: "Endeavor Air",
+        callsignIata: null,
+        arrivesHere: false,
+      },
       seenPosSec: 1.1,
     },
   ],
@@ -263,10 +289,48 @@ describe("the board", () => {
     expect(wrapper.findAll("li.row")).toHaveLength(2);
   });
 
-  it("credits the data source", async () => {
+  it("credits every data source", async () => {
     const { wrapper } = await mountBoard();
     expect(wrapper.text()).toContain("ADS-B data by adsb.lol");
+    expect(wrapper.text()).toContain("Routes by adsbdb.com");
     expect(wrapper.text()).toContain("planespotters.net");
     expect(wrapper.text()).toContain("estimates");
+  });
+
+  it("shows where an arrival is coming from and going to", async () => {
+    const { wrapper } = await mountBoard();
+    const route = wrapper.findAll("li.row")[0]!.find(".row__route");
+
+    expect(route.exists()).toBe(true);
+    expect(route.text()).toContain("DXB");
+    expect(route.text()).toContain("YYZ");
+    // The origin city is the part worth reading; the codes alone are terse.
+    expect(route.text()).toContain("Dubai");
+    expect(route.classes()).not.toContain("row__route--elsewhere");
+    expect(route.text()).not.toContain("scheduled");
+  });
+
+  it("flags a scheduled route that does not end at this airport", async () => {
+    const { wrapper } = await mountBoard();
+    const route = wrapper.findAll("li.row")[1]!.find(".row__route");
+
+    // Still shown - hiding it would lose real information - but marked.
+    expect(route.text()).toContain("JFK");
+    expect(route.text()).toContain("CLT");
+    expect(route.classes()).toContain("row__route--elsewhere");
+    expect(route.text()).toContain("scheduled");
+    expect(route.attributes("title")).toContain("does not end at this airport");
+  });
+
+  it("renders no route line for an aircraft with no route", async () => {
+    const { wrapper, source } = await mountBoard();
+    source.emit("snapshot", {
+      ...snapshot,
+      aircraft: [{ ...snapshot.aircraft[0]!, route: null }],
+    });
+    await flushPromises();
+
+    expect(wrapper.findAll("li.row")).toHaveLength(1);
+    expect(wrapper.find(".row__route").exists()).toBe(false);
   });
 });

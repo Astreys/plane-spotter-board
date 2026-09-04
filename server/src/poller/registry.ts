@@ -1,5 +1,6 @@
 import { findAirport, type Airport } from "../config/airports.js";
 import { config } from "../config/env.js";
+import { RouteResolver } from "../flightroute/resolver.js";
 import { SchedulePoller } from "../schedule/poller.js";
 import { AirportPoller, type PollerLogger } from "./poller.js";
 
@@ -9,6 +10,8 @@ import { AirportPoller, type PollerLogger } from "./poller.js";
  */
 export class PollerRegistry {
   private readonly pollers = new Map<string, AirportPoller>();
+  /** One shared cache across airports — a callsign flies one route wherever it lands. */
+  private readonly routes: RouteResolver;
   /** Schedule pollers run alongside, on their own much slower timer. */
   private readonly schedules = new Map<string, SchedulePoller>();
 
@@ -16,8 +19,9 @@ export class PollerRegistry {
     airports: readonly Airport[],
     private readonly log: PollerLogger,
   ) {
+    this.routes = new RouteResolver(log);
     for (const airport of airports) {
-      this.pollers.set(airport.icao, new AirportPoller(airport, log));
+      this.pollers.set(airport.icao, new AirportPoller(airport, log, this.routes));
       this.schedules.set(airport.icao, new SchedulePoller(airport, log));
     }
   }
@@ -45,6 +49,12 @@ export class PollerRegistry {
   stop(): void {
     for (const poller of this.pollers.values()) poller.stop();
     for (const schedule of this.schedules.values()) schedule.stop();
+    this.routes.stop();
+  }
+
+  /** Route cache size and backlog, for the health endpoint. */
+  routeStats(): { cached: number; queued: number } {
+    return this.routes.stats();
   }
 
   /** Accepts ICAO or IATA, like get(). */

@@ -9,6 +9,30 @@
 export type CategoryId = string;
 export type GroupId = string;
 
+export interface RouteAirport {
+  iata: string | null;
+  icao: string | null;
+  name: string | null;
+  city: string | null;
+  countryIso: string | null;
+}
+
+/**
+ * The callsign's scheduled route.
+ *
+ * `arrivesHere` is false whenever the scheduled destination is not the airport
+ * being watched — which happens often, because the route database keys on
+ * callsign and returns a typical city pair rather than today's leg. The row marks
+ * those instead of presenting them as this arrival's route.
+ */
+export interface FlightRoute {
+  origin: RouteAirport | null;
+  destination: RouteAirport | null;
+  airline: string | null;
+  callsignIata: string | null;
+  arrivesHere: boolean;
+}
+
 export interface InboundAircraft {
   hex: string;
   callsign: string | null;
@@ -26,6 +50,7 @@ export interface InboundAircraft {
   fromDirection: string;
   minutesOut: number | null;
   categories: CategoryId[];
+  route: FlightRoute | null;
   seenPosSec: number;
 }
 
@@ -99,6 +124,8 @@ export interface CategoryDto {
 export interface ConfigDto {
   upcomingEnabled: boolean;
   upcomingCategories: CategoryId[];
+  /** Every upstream we take data from, for the credits line in the footer. */
+  sources: Array<{ label: string; url: string }>;
   airports: Array<{ icao: string; iata: string; name: string; city: string; tracked: boolean }>;
   defaultAirport: string;
   groups: Array<{ id: GroupId; label: string }>;

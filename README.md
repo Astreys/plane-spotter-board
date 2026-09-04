@@ -24,7 +24,7 @@ First data lands within a poll interval (15s). `npm run dev:server` and
 `npm run dev:web` run the halves separately.
 
 ```bash
-npm test        # 137 tests across server and web
+npm test        # 165 tests across server and web
 npm run build   # typecheck both, compile the server, bundle the frontend
 ```
 
@@ -128,6 +128,28 @@ rather than dropped.
 
 Times are the operator schedule, not observation. A revision is only marked when
 it actually moves the time.
+## Where a flight came from
+
+The ADS-B feed carries no route — it knows a callsign, not a city pair. Routes
+come from [adsbdb.com](https://www.adsbdb.com), looked up by callsign, cached in
+memory, and fetched **in the background**: the poller attaches whatever is already
+cached and never waits, so a newly seen aircraft gains its route on the next tick
+rather than delaying the board. adsbdb is a separate service from the aggregators
+and holds its own rate gate, so it never spends their one-request-per-second
+budget.
+
+**Treat the route as the flight number's scheduled city pair, not as where this
+aircraft just came from.** The database stores one canonical pair per callsign,
+and airlines reuse a number across different pairs on different days. Sampled
+against YYZ short-final traffic, the stored destination frequently was not YYZ —
+including a WestJet at 475 ft on 1.5 nm final whose stored route read
+`YXX → YYC`.
+
+So the board shows the pair but never asserts it. When the scheduled destination
+is not the airport being watched, the row dims the route and marks it
+`SCHEDULED`. `arrivesAt()` in
+[`server/src/domain/route.ts`](server/src/domain/route.ts) is the one place that
+decides this, and it is unit tested.
 
 ## Filters
 

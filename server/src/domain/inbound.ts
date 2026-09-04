@@ -170,6 +170,9 @@ export function toInboundAircraft(
     fromDirection: compassPoint(verdict.bearingFromAirportDeg),
     minutesOut: estimateMinutesOut(verdict.distanceNm, ac.groundSpeedKt),
     categories: categoriesFor({ type: ac.type, callsign: ac.callsign }),
+    // Filled in by the poller from the route cache; the domain stays pure and
+    // synchronous, with no upstream of its own.
+    route: null,
     seenPosSec: Math.round(ac.seenPosSec * 10) / 10,
   };
 }

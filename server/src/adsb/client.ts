@@ -1,4 +1,5 @@
 import { config } from "../config/env.js";
+import { RateGate } from "../util/rate-gate.js";
 import type { RawSnapshot } from "./types.js";
 
 /**
@@ -29,37 +30,14 @@ export class AdsbError extends Error {
 }
 
 /**
- * A single global gate in front of every upstream request. Every poller shares it,
- * so no matter how many airports are tracked we never exceed one request per
- * `minRequestSpacingMs`. Requests queue rather than being dropped.
+ * The single global gate in front of every aggregator request. Every poller
+ * shares this one instance, so no matter how many airports are tracked we never
+ * exceed one request per `minRequestSpacingMs`. Requests queue, never drop.
+ *
+ * Other upstreams - the route database, the photo API - are separate services
+ * with their own published limits. They hold their own gates rather than
+ * borrowing this budget, which is reserved for the aggregators.
  */
-class RateGate {
-  private chain: Promise<void> = Promise.resolve();
-  private lastStart = 0;
-
-  constructor(private readonly spacingMs: number) {}
-
-  run<T>(task: () => Promise<T>): Promise<T> {
-    const result = this.chain.then(async () => {
-      const wait = this.lastStart + this.spacingMs - Date.now();
-      if (wait > 0) await sleep(wait);
-      this.lastStart = Date.now();
-      return task();
-    });
-
-    // Keep the chain alive regardless of how this task settles.
-    this.chain = result.then(
-      () => undefined,
-      () => undefined,
-    );
-    return result;
-  }
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 const gate = new RateGate(config.minRequestSpacingMs);
 
 export interface FetchResult {
