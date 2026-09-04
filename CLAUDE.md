@@ -29,7 +29,7 @@ with the raw code visible.
 
 ```bash
 npm run dev      # API on :8787, frontend on :5173 with /api proxied
-npm test         # 101 tests, server + web
+npm test         # 137 tests, server + web
 npm run build    # typecheck both, compile server, bundle frontend
 ```
 
@@ -56,3 +56,31 @@ high-elevation airports and there is a test for it.
 Multiple airports on screen at once, accounts, saved filters, notifications,
 history, departures, map view. Push back if these arrive before the core board is
 solid.
+
+## The Upcoming board and its budget
+
+A fourth upstream, AeroDataBox, supplies today's scheduled arrivals. It is the
+only one needing a key, and the only one that is **metered by the month**: 600
+units on the free tier, 2 per schedule fetch, so about 300 fetches a month.
+
+That budget is why `SchedulePoller` runs on a three-hour timer rather than a
+fifteen-second one, and why `routes/upcoming.ts` only ever reads cache. A fetch
+on a request path would burn the month in an afternoon — the same invariant as
+the live board, with far less headroom.
+
+**The key is optional.** With `AERODATABOX_API_KEY` unset the schedule poller
+never starts, `/api/config` reports `upcomingEnabled: false`, and the frontend
+hides the tab. A fresh clone still runs with no signup, which is what the spec
+promised.
+
+## The schedule speaks a different language
+
+AeroDataBox reports aircraft as free text — "Boeing 777-300ER", and really
+"Canadair reg jet 700" — not as ICAO designators. `schedule/model-codes.ts`
+normalises that onto a designator so classification goes through the same
+`categoriesFor` the live board uses. The taxonomy stays the one source of truth;
+adding a type code is still a one-file change.
+
+First match wins in `MODEL_PATTERNS`, so a specific variant must precede its
+family. An unmapped model is reported in `unrecognisedModels` rather than being
+silently dropped.

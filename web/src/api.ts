@@ -29,6 +29,39 @@ export interface InboundAircraft {
   seenPosSec: number;
 }
 
+/** One scheduled arrival on the Upcoming board. */
+export interface UpcomingFlight {
+  number: string | null;
+  callsign: string | null;
+  airline: string | null;
+  status: string | null;
+  isCargo: boolean;
+  type: string | null;
+  model: string | null;
+  typeName: string | null;
+  registration: string | null;
+  hex: string | null;
+  origin: { icao: string | null; iata: string | null; name: string | null } | null;
+  arrivalTime: string;
+  arrivalIsRevised: boolean;
+  terminal: string | null;
+  gate: string | null;
+  categories: CategoryId[];
+}
+
+export interface UpcomingSnapshot {
+  airport: { icao: string; iata: string; name: string; timeZone: string };
+  updatedAt: number;
+  ageSeconds: number;
+  unavailable: boolean;
+  error: string | null;
+  windowHours: number;
+  totalScheduled: number;
+  flights: UpcomingFlight[];
+  unrecognisedModels: string[];
+  unitsRemaining: number | null;
+}
+
 export interface Attribution {
   label: string;
   url: string;
@@ -64,6 +97,8 @@ export interface CategoryDto {
 }
 
 export interface ConfigDto {
+  upcomingEnabled: boolean;
+  upcomingCategories: CategoryId[];
   airports: Array<{ icao: string; iata: string; name: string; city: string; tracked: boolean }>;
   defaultAirport: string;
   groups: Array<{ id: GroupId; label: string }>;
@@ -106,6 +141,19 @@ export async function fetchInbound(icao: string, signal?: AbortSignal): Promise<
   const response = await fetch(apiUrl(`/api/airport/${icao}/inbound`), { signal });
   if (!response.ok) throw new Error(`inbound request failed: ${response.status}`);
   return (await response.json()) as InboundSnapshot;
+}
+
+/**
+ * The schedule refreshes on the server every few hours, so the browser asking
+ * again on a tab switch costs nothing upstream - it reads the same cache.
+ */
+export async function fetchUpcoming(
+  icao: string,
+  signal?: AbortSignal,
+): Promise<UpcomingSnapshot> {
+  const response = await fetch(apiUrl("/api/airport/" + icao + "/upcoming"), { signal });
+  if (!response.ok) throw new Error("upcoming request failed: " + response.status);
+  return (await response.json()) as UpcomingSnapshot;
 }
 
 /**

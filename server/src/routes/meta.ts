@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { ATTRIBUTION } from "../adsb/client.js";
+import { BIG_CATEGORIES } from "../schedule/normalize.js";
 import { AIRPORTS } from "../config/airports.js";
 import { CATEGORIES, CATEGORY_GROUPS } from "../config/aircraft-types.js";
 import { config } from "../config/env.js";
@@ -39,6 +40,8 @@ export function registerMetaRoutes(app: FastifyInstance, registry: PollerRegistr
         maxPositionAgeSec: INBOUND_RULES.maxPositionAgeSec,
       },
       attribution: ATTRIBUTION,
+      upcomingEnabled: registry.scheduleEnabled,
+      upcomingCategories: [...BIG_CATEGORIES],
       pollIntervalMs: config.pollIntervalMs,
     };
   });
@@ -60,6 +63,7 @@ export function registerMetaRoutes(app: FastifyInstance, registry: PollerRegistr
     return reply.code(ready ? 200 : 503).send({
       status: ready ? "ok" : "warming-up",
       uptimeSec: Math.round(process.uptime()),
+      scheduleEnabled: registry.scheduleEnabled,
       pollers,
     });
   });

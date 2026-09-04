@@ -60,6 +60,19 @@ Notes on fields:
   Compute them ourselves as a fallback — don't assume they're there.
 - Any field can be missing. Never index blindly.
 
+### Amendment: the Upcoming board needs a key
+
+The no-key rule above holds for the live board and still does. It cannot hold for
+a schedule: ADS-B knows what is airborne now and never what is booked for later,
+and every schedule API requires a key. Verified in September 2026 - adsbdb has no
+airport endpoint, adsb.lol returns airport metadata only, and AeroDataBox 401s
+without a key.
+
+So the Upcoming board uses AeroDataBox on its free tier, and the key is optional:
+without it the schedule poller never starts and the tab hides, leaving the live
+board exactly as specified here. Nothing in this document is weakened for anyone
+who does not set one.
+
 Terms: non-commercial use only. Add visible attribution to the data source in the UI.
 Send a real `User-Agent` identifying the app.
 

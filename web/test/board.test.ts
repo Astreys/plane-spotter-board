@@ -10,6 +10,8 @@ import type { ConfigDto, InboundSnapshot } from "../src/api";
  */
 
 const config: ConfigDto = {
+  upcomingEnabled: false,
+  upcomingCategories: ["DOUBLE_DECK", "QUAD", "WIDEBODY"],
   airports: [{ icao: "CYYZ", iata: "YYZ", name: "Toronto Pearson International", city: "Toronto", tracked: true }],
   defaultAirport: "CYYZ",
   groups: [

@@ -6,11 +6,16 @@ import { useBoard } from "./composables/useBoard";
 import AircraftRow from "./components/AircraftRow.vue";
 import FilterChips from "./components/FilterChips.vue";
 import StatusBar from "./components/StatusBar.vue";
+import UpcomingList from "./components/UpcomingList.vue";
 
 const config = ref<ConfigDto | null>(null);
 const configError = ref<string | null>(null);
 const icao = ref("");
 const showPhotos = ref(readPhotoPreference());
+
+/** Which board is on screen. Only ever "live" when there is no schedule key. */
+const tab = ref<"live" | "upcoming">("live");
+const showTabs = computed(() => config.value?.upcomingEnabled === true);
 
 const board = useBoard(() => icao.value);
 
@@ -94,7 +99,29 @@ onMounted(async () => {
         </button>
       </div>
 
+      <div v-if="showTabs" class="tabs" role="tablist">
+        <button
+          type="button"
+          class="tabs__tab"
+          role="tab"
+          :aria-selected="tab === 'live'"
+          @click="tab = 'live'"
+        >
+          Inbound now
+        </button>
+        <button
+          type="button"
+          class="tabs__tab"
+          role="tab"
+          :aria-selected="tab === 'upcoming'"
+          @click="tab = 'upcoming'"
+        >
+          Upcoming big
+        </button>
+      </div>
+
       <StatusBar
+        v-if="tab === 'live'"
         :connection="board.connection.value"
         :age-seconds="board.ageSeconds.value"
         :stale="board.snapshot.value?.stale ?? false"
@@ -104,7 +131,7 @@ onMounted(async () => {
       />
 
       <FilterChips
-        v-if="config"
+        v-if="config && tab === 'live'"
         :groups="config.groups"
         :categories="config.categories"
         :selected="board.selected.value"
@@ -118,6 +145,12 @@ onMounted(async () => {
       <p v-if="configError" class="notice notice--error">
         Could not reach the board API: {{ configError }}
       </p>
+
+      <UpcomingList
+        v-else-if="tab === 'upcoming'"
+        :icao="icao"
+        :time-zone="board.snapshot.value?.airport.timeZone ?? null"
+      />
 
       <ul v-else-if="visible.length" class="list">
         <AircraftRow
@@ -151,7 +184,7 @@ onMounted(async () => {
         <a :href="board.snapshot.value.source.attribution.url" target="_blank" rel="noopener">
           {{ board.snapshot.value.source.attribution.label }}
         </a>
-        · photos by
+        Â· photos by
         <a href="https://www.planespotters.net" target="_blank" rel="noopener">planespotters.net</a>
       </p>
       <p class="footer__note">Non-commercial use. Not for navigation.</p>
@@ -240,6 +273,35 @@ onMounted(async () => {
 
 .header__photos[aria-pressed="true"] {
   color: var(--text);
+}
+
+/* Two boards, one header. The tab strip is the only thing that switches them. */
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.15rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+
+.tabs__tab {
+  flex: 1 1 0;
+  min-height: 1.95rem;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 550;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.tabs__tab[aria-selected="true"] {
+  background: var(--accent);
+  color: var(--accent-ink);
 }
 
 .board {
