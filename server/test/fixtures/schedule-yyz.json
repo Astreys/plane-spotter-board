@@ -1,0 +1,770 @@
+{
+  "arrivals": [
+    {
+      "departure": {
+        "airport": {
+          "icao": "MDPC",
+          "iata": "PUJ",
+          "name": "Punta Cana",
+          "countryCode": "do",
+          "timeZone": "America/Santo_Domingo"
+        },
+        "quality": []
+      },
+      "arrival": {
+        "scheduledTime": {
+          "utc": "2026-09-04 16:05Z",
+          "local": "2026-09-04 12:05-04:00"
+        },
+        "revisedTime": {
+          "utc": "2026-09-04 15:52Z",
+          "local": "2026-09-04 11:52-04:00"
+        },
+        "terminal": "1",
+        "gate": "505",
+        "quality": [
+          "Basic",
+          "Live"
+        ]
+      },
+      "number": "AC 7255",
+      "callSign": "ACA7255",
+      "status": "Expected",
+      "codeshareStatus": "IsOperator",
+      "isCargo": false,
+      "aircraft": {
+        "reg": "C-FTCA",
+        "modeS": "C03261",
+        "model": "Boeing 767-300"
+      },
+      "airline": {
+        "name": "Air Canada",
+        "iata": "AC",
+        "icao": "ACA"
+      }
+    },
+    {
+      "departure": {
+        "airport": {
+          "icao": "OPLA",
+          "iata": "LHE",
+          "name": "Lahore",
+          "countryCode": "pk",
+          "timeZone": "Asia/Karachi"
+        },
+        "quality": []
+      },
+      "arrival": {
+        "scheduledTime": {
+          "utc": "2026-09-04 16:40Z",
+          "local": "2026-09-04 12:40-04:00"
+        },
+        "revisedTime": {
+          "utc": "2026-09-04 16:30Z",
+          "local": "2026-09-04 12:30-04:00"
+        },
+        "terminal": "3",
+        "gate": "C33",
+        "baggageBelt": "10",
+        "quality": [
+          "Basic",
+          "Live"
+        ]
+      },
+      "number": "PK 789",
+      "callSign": "PIA789",
+      "status": "Expected",
+      "codeshareStatus": "IsOperator",
+      "isCargo": false,
+      "aircraft": {
+        "reg": "AP-BGY",
+        "modeS": "7608F9",
+        "model": "Boeing 777-200"
+      },
+      "airline": {
+        "name": "Pakistan International",
+        "iata": "PK",
+        "icao": "PIA"
+      }
+    },
+    {
+      "departure": {
+        "airport": {
+          "icao": "EDDF",
+          "iata": "FRA",
+          "name": "Frankfurt-am-Main",
+          "countryCode": "de",
+          "timeZone": "Europe/Berlin"
+        },
+        "scheduledTime": {
+          "utc": "2026-09-04 08:00Z",
+          "local": "2026-09-04 10:00+02:00"
+        },
+        "revisedTime": {
+          "utc": "2026-09-04 08:00Z",
+          "local": "2026-09-04 10:00+02:00"
+        },
+        "runwayTime": {
+          "utc": "2026-09-04 08:19Z",
+          "local": "2026-09-04 10:19+02:00"
+        },
+        "terminal": "1",
+        "checkInDesk": "656-688",
+        "gate": "B45",
+        "quality": [
+          "Basic",
+          "Live"
+        ]
+      },
+      "arrival": {
+        "scheduledTime": {
+          "utc": "2026-09-04 16:55Z",
+          "local": "2026-09-04 12:55-04:00"
+        },
+        "revisedTime": {
+          "utc": "2026-09-04 16:39Z",
+          "local": "2026-09-04 12:39-04:00"
+        },
+        "terminal": "1",
+        "gate": "E70",
+        "baggageBelt": "5",
+        "quality": [
+          "Basic",
+          "Live"
+        ]
+      },
+      "number": "AC 841",
+      "callSign": "ACA841",
+      "status": "Expected",
+      "codeshareStatus": "IsOperator",
+      "isCargo": false,
+      "aircraft": {
+        "reg": "C-GKUH",
+        "modeS": "C06120",
+        "model": "Airbus A330-300"
+      },
+      "airline": {
+        "name": "Air Canada",
+        "iata": "AC",
+        "icao": "ACA"
+      }
+    },
+    {
+      "departure": {
+        "airport": {
+          "icao": "EHAM",
+          "iata": "AMS",
+          "name": "Amsterdam",
+          "countryCode": "nl",
+          "timeZone": "Europe/Amsterdam"
+        },
+        "scheduledTime": {
+          "utc": "2026-09-04 09:20Z",
+          "local": "2026-09-04 11:20+02:00"
+        },
+        "revisedTime": {
+          "utc": "2026-09-04 09:23Z",
+          "local": "2026-09-04 11:23+02:00"
+        },
+        "runwayTime": {
+          "utc": "2026-09-04 09:34Z",
+          "local": "2026-09-04 11:34+02:00"
+        },
+        "terminal": "2",
+        "checkInDesk": "9-16",
+        "gate": "D10",
+        "runway": "24",
+        "quality": [
+          "Basic",
+          "Live"
+        ]
+      },
+      "arrival": {
+        "scheduledTime": {
+          "utc": "2026-09-04 17:20Z",
+          "local": "2026-09-04 13:20-04:00"
+        },
+        "revisedTime": {
+          "utc": "2026-09-04 17:01Z",
+          "local": "2026-09-04 13:01-04:00"
+        },
+        "terminal": "3",
+        "gate": "C31",
+        "baggageBelt": "9",
+        "quality": [
+          "Basic",
+          "Live"
+        ]
+      },
+      "number": "KL 691",
+      "callSign": "KLM147",
+      "status": "Expected",
+      "codeshareStatus": "IsOperator",
+      "isCargo": false,
+      "aircraft": {
+        "reg": "PH-BKP",
+        "modeS": "485F83",
+        "model": "Boeing 787"
+      },
+      "airline": {
+        "name": "KLM",
+        "iata": "KL",
+        "icao": "KLM"
+      }
+    },
+    {
+      "departure": {
+        "airport": {
+          "icao": "LOWW",
+          "iata": "VIE",
+          "name": "Vienna",
+          "countryCode": "at",
+          "timeZone": "Europe/Vienna"
+        },
+        "scheduledTime": {
+          "utc": "2026-09-04 08:30Z",
+          "local": "2026-09-04 10:30+02:00"
+        },
+        "revisedTime": {
+          "utc": "2026-09-04 08:40Z",
+          "local": "2026-09-04 10:40+02:00"
+        },
+        "runwayTime": {
+          "utc": "2026-09-04 08:41Z",
+          "local": "2026-09-04 10:41+02:00"
+        },
+        "terminal": "3",
+        "checkInDesk": "311-315",
+        "gate": "G31",
+        "runway": "34",
+        "quality": [
+          "Basic",
+          "Live"
+        ]
+      },
+      "arrival": {
+        "scheduledTime": {
+          "utc": "2026-09-04 17:40Z",
+          "local": "2026-09-04 13:40-04:00"
+        },
+        "revisedTime": {
+          "utc": "2026-09-04 17:21Z",
+          "local": "2026-09-04 13:21-04:00"
+        },
+        "terminal": "1",
+        "gate": "E80",
+        "baggageBelt": "7",
+        "quality": [
+          "Basic",
+          "Live"
+        ]
+      },
+      "number": "AC 887",
+      "callSign": "ACA887",
+      "status": "Expected",
+      "codeshareStatus": "IsOperator",
+      "isCargo": false,
+      "aircraft": {
+        "reg": "C-FNND",
+        "modeS": "C023AA",
+        "model": "Boeing 777-200LR"
+      },
+      "airline": {
+        "name": "Air Canada",
+        "iata": "AC",
+        "icao": "ACA"
+      }
+    },
+    {
+      "departure": {
+        "airport": {
+          "icao": "VHHH",
+          "iata": "HKG",
+          "name": "Hong Kong",
+          "countryCode": "hk",
+          "timeZone": "Asia/Shanghai"
+        },
+        "scheduledTime": {
+          "utc": "2026-09-04 03:00Z",
+          "local": "2026-09-04 11:00+08:00"
+        },
+        "revisedTime": {
+          "utc": "2026-09-04 03:00Z",
+          "local": "2026-09-04 11:00+08:00"
+        },
+        "runwayTime": {
+          "utc": "2026-09-04 03:15Z",
+          "local": "2026-09-04 11:15+08:00"
+        },
+        "terminal": "1",
+        "checkInDesk": "C",
+        "gate": "66",
+        "quality": [
+          "Basic",
+          "Live"
+        ]
+      },
+      "arrival": {
+        "scheduledTime": {
+          "utc": "2026-09-04 18:00Z",
+          "local": "2026-09-04 14:00-04:00"
+        },
+        "revisedTime": {
+          "utc": "2026-09-04 17:24Z",
+          "local": "2026-09-04 13:24-04:00"
+        },
+        "terminal": "3",
+        "gate": "C35",
+        "baggageBelt": "8",
+        "quality": [
+          "Basic",
+          "Live"
+        ]
+      },
+      "number": "CX 828",
+      "callSign": "CPA828",
+      "status": "Expected",
+      "codeshareStatus": "IsOperator",
+      "isCargo": false,
+      "aircraft": {
+        "reg": "B-LXK",
+        "modeS": "789231",
+        "model": "Airbus A350-1000"
+      },
+      "airline": {
+        "name": "Cathay Pacific",
+        "iata": "CX",
+        "icao": "CPA"
+      }
+    },
+    {
+      "departure": {
+        "airport": {
+          "icao": "LSZH",
+          "iata": "ZRH",
+          "name": "Zurich",
+          "countryCode": "ch",
+          "timeZone": "Europe/Zurich"
+        },
+        "scheduledTime": {
+          "utc": "2026-09-04 07:55Z",
+          "local": "2026-09-04 09:55+02:00"
+        },
+        "revisedTime": {
+          "utc": "2026-09-04 07:55Z",
+          "local": "2026-09-04 09:55+02:00"
+        },
+        "runwayTime": {
+          "utc": "2026-09-04 08:38Z",
+          "local": "2026-09-04 10:38+02:00"
+        },
+        "checkInDesk": "1",
+        "gate": "E52",
+        "quality": [
+          "Basic",
+          "Live"
+        ]
+      },
+      "arrival": {
+        "scheduledTime": {
+          "utc": "2026-09-04 16:50Z",
+          "local": "2026-09-04 12:50-04:00"
+        },
+        "revisedTime": {
+          "utc": "2026-09-04 17:26Z",
+          "local": "2026-09-04 13:26-04:00"
+        },
+        "terminal": "1",
+        "gate": "E74",
+        "baggageBelt": "13",
+        "quality": [
+          "Basic",
+          "Live"
+        ]
+      },
+      "number": "LX 80",
+      "callSign": "SWR80",
+      "status": "Delayed",
+      "codeshareStatus": "IsOperator",
+      "isCargo": false,
+      "aircraft": {
+        "reg": "HB-JHD",
+        "modeS": "4B187D",
+        "model": "Airbus A330-300"
+      },
+      "airline": {
+        "name": "SWISS",
+        "iata": "LX",
+        "icao": "SWR"
+      }
+    },
+    {
+      "departure": {
+        "airport": {
+          "icao": "MMGL",
+          "iata": "GDL",
+          "name": "Guadalajara",
+          "countryCode": "mx",
+          "timeZone": "America/Mexico_City"
+        },
+        "quality": []
+      },
+      "arrival": {
+        "scheduledTime": {
+          "utc": "2026-09-04 17:35Z",
+          "local": "2026-09-04 13:35-04:00"
+        },
+        "revisedTime": {
+          "utc": "2026-09-04 17:35Z",
+          "local": "2026-09-04 13:35-04:00"
+        },
+        "terminal": "1",
+        "gate": "509",
+        "quality": [
+          "Basic",
+          "Live"
+        ]
+      },
+      "number": "AC 7247",
+      "callSign": "ACA7247",
+      "status": "Expected",
+      "codeshareStatus": "IsOperator",
+      "isCargo": false,
+      "aircraft": {
+        "reg": "C-FPCA",
+        "modeS": "C027D1",
+        "model": "Boeing 767-300"
+      },
+      "airline": {
+        "name": "Air Canada",
+        "iata": "AC",
+        "icao": "ACA"
+      }
+    },
+    {
+      "departure": {
+        "airport": {
+          "icao": "CYSJ",
+          "iata": "YSJ",
+          "name": "Saint John",
+          "countryCode": "ca",
+          "timeZone": "America/Moncton"
+        },
+        "scheduledTime": {
+          "utc": "2026-09-04 13:47Z",
+          "local": "2026-09-04 10:47-03:00"
+        },
+        "revisedTime": {
+          "utc": "2026-09-04 13:47Z",
+          "local": "2026-09-04 10:47-03:00"
+        },
+        "runwayTime": {
+          "utc": "2026-09-04 13:47Z",
+          "local": "2026-09-04 10:47-03:00"
+        },
+        "runway": "23",
+        "quality": [
+          "Basic",
+          "Live"
+        ]
+      },
+      "arrival": {
+        "scheduledTime": {
+          "utc": "2026-09-04 16:00Z",
+          "local": "2026-09-04 12:00-04:00"
+        },
+        "revisedTime": {
+          "utc": "2026-09-04 15:40Z",
+          "local": "2026-09-04 11:40-04:00"
+        },
+        "terminal": "3",
+        "gate": "B2A",
+        "baggageBelt": "1",
+        "quality": [
+          "Basic",
+          "Live"
+        ]
+      },
+      "number": "F8 685",
+      "callSign": "FLE685",
+      "status": "Expected",
+      "codeshareStatus": "IsOperator",
+      "isCargo": false,
+      "aircraft": {
+        "reg": "C-FFFX",
+        "modeS": "C00DCE",
+        "model": "Boeing 737"
+      },
+      "airline": {
+        "name": "Flair",
+        "iata": "F8",
+        "icao": "FLE"
+      }
+    },
+    {
+      "departure": {
+        "airport": {
+          "icao": "KBOS",
+          "iata": "BOS",
+          "name": "Boston",
+          "countryCode": "us",
+          "timeZone": "America/New_York"
+        },
+        "scheduledTime": {
+          "utc": "2026-09-04 14:05Z",
+          "local": "2026-09-04 10:05-04:00"
+        },
+        "revisedTime": {
+          "utc": "2026-09-04 14:12Z",
+          "local": "2026-09-04 10:12-04:00"
+        },
+        "runwayTime": {
+          "utc": "2026-09-04 14:12Z",
+          "local": "2026-09-04 10:12-04:00"
+        },
+        "terminal": "E",
+        "runway": "22R",
+        "quality": [
+          "Basic",
+          "Live"
+        ]
+      },
+      "arrival": {
+        "scheduledTime": {
+          "utc": "2026-09-04 16:00Z",
+          "local": "2026-09-04 12:00-04:00"
+        },
+        "revisedTime": {
+          "utc": "2026-09-04 15:46Z",
+          "local": "2026-09-04 11:46-04:00"
+        },
+        "terminal": "3",
+        "gate": "C41",
+        "baggageBelt": "8",
+        "quality": [
+          "Basic",
+          "Live"
+        ]
+      },
+      "number": "PD 616",
+      "callSign": "POE616",
+      "status": "Expected",
+      "codeshareStatus": "IsOperator",
+      "isCargo": false,
+      "aircraft": {
+        "reg": "C-GKYI",
+        "modeS": "C06189",
+        "model": "Embraer 195"
+      },
+      "airline": {
+        "name": "Porter",
+        "iata": "PD",
+        "icao": "POE"
+      }
+    },
+    {
+      "departure": {
+        "airport": {
+          "icao": "KDTW",
+          "iata": "DTW",
+          "name": "Detroit",
+          "countryCode": "us",
+          "timeZone": "America/Detroit"
+        },
+        "scheduledTime": {
+          "utc": "2026-09-04 14:00Z",
+          "local": "2026-09-04 10:00-04:00"
+        },
+        "revisedTime": {
+          "utc": "2026-09-04 14:47Z",
+          "local": "2026-09-04 10:47-04:00"
+        },
+        "runwayTime": {
+          "utc": "2026-09-04 14:47Z",
+          "local": "2026-09-04 10:47-04:00"
+        },
+        "terminal": "M",
+        "runway": "03L",
+        "quality": [
+          "Basic",
+          "Live"
+        ]
+      },
+      "arrival": {
+        "scheduledTime": {
+          "utc": "2026-09-04 15:19Z",
+          "local": "2026-09-04 11:19-04:00"
+        },
+        "revisedTime": {
+          "utc": "2026-09-04 15:48Z",
+          "local": "2026-09-04 11:48-04:00"
+        },
+        "terminal": "3",
+        "gate": "A6",
+        "baggageBelt": "6",
+        "quality": [
+          "Basic",
+          "Live"
+        ]
+      },
+      "number": "DL 5251",
+      "callSign": "EDV5251",
+      "status": "Delayed",
+      "codeshareStatus": "IsOperator",
+      "isCargo": false,
+      "aircraft": {
+        "reg": "N137EV",
+        "modeS": "A095AA",
+        "model": "Bombardier CRJ900"
+      },
+      "airline": {
+        "name": "Delta Air Lines",
+        "iata": "DL",
+        "icao": "DAL"
+      }
+    },
+    {
+      "departure": {
+        "airport": {
+          "icao": "KLGA",
+          "iata": "LGA",
+          "name": "New York",
+          "countryCode": "us",
+          "timeZone": "America/New_York"
+        },
+        "scheduledTime": {
+          "utc": "2026-09-04 13:55Z",
+          "local": "2026-09-04 09:55-04:00"
+        },
+        "revisedTime": {
+          "utc": "2026-09-04 14:45Z",
+          "local": "2026-09-04 10:45-04:00"
+        },
+        "runwayTime": {
+          "utc": "2026-09-04 14:45Z",
+          "local": "2026-09-04 10:45-04:00"
+        },
+        "terminal": "B",
+        "runway": "04",
+        "quality": [
+          "Basic",
+          "Live"
+        ]
+      },
+      "arrival": {
+        "scheduledTime": {
+          "utc": "2026-09-04 15:35Z",
+          "local": "2026-09-04 11:35-04:00"
+        },
+        "revisedTime": {
+          "utc": "2026-09-04 15:50Z",
+          "local": "2026-09-04 11:50-04:00"
+        },
+        "terminal": "3",
+        "gate": "C37A",
+        "baggageBelt": "8",
+        "quality": [
+          "Basic",
+          "Live"
+        ]
+      },
+      "number": "PD 604",
+      "callSign": "POE604",
+      "status": "Delayed",
+      "codeshareStatus": "IsOperator",
+      "isCargo": false,
+      "aircraft": {
+        "reg": "C-GKQL",
+        "modeS": "C060BC",
+        "model": "Embraer 195"
+      },
+      "airline": {
+        "name": "Porter",
+        "iata": "PD",
+        "icao": "POE"
+      }
+    },
+    {
+      "departure": {
+        "airport": {
+          "icao": "CYQB",
+          "iata": "YQB",
+          "name": "Quebec",
+          "countryCode": "ca",
+          "timeZone": "America/Toronto"
+        },
+        "scheduledTime": {
+          "utc": "2026-09-04 10:40Z",
+          "local": "2026-09-04 06:40-04:00"
+        },
+        "quality": [
+          "Basic"
+        ]
+      },
+      "arrival": {
+        "scheduledTime": {
+          "utc": "2026-09-04 12:15Z",
+          "local": "2026-09-04 08:15-04:00"
+        },
+        "revisedTime": {
+          "utc": "2026-09-04 17:31Z",
+          "local": "2026-09-04 13:31-04:00"
+        },
+        "terminal": "3",
+        "gate": "B4",
+        "baggageBelt": "4",
+        "quality": [
+          "Basic",
+          "Live"
+        ]
+      },
+      "number": "PD 188",
+      "status": "Delayed",
+      "codeshareStatus": "IsOperator",
+      "isCargo": false,
+      "airline": {
+        "name": "Porter",
+        "iata": "PD",
+        "icao": "POE"
+      }
+    },
+    {
+      "departure": {
+        "airport": {
+          "icao": "CYRQ",
+          "iata": "YRQ",
+          "name": "Trois-Rivières",
+          "countryCode": "ca",
+          "timeZone": "America/Toronto"
+        },
+        "quality": []
+      },
+      "arrival": {
+        "scheduledTime": {
+          "utc": "2026-09-04 19:15Z",
+          "local": "2026-09-04 15:15-04:00"
+        },
+        "revisedTime": {
+          "utc": "2026-09-04 17:32Z",
+          "local": "2026-09-04 13:32-04:00"
+        },
+        "terminal": "1",
+        "gate": "H5",
+        "baggageBelt": "4",
+        "quality": [
+          "Basic",
+          "Live"
+        ]
+      },
+      "number": "AC 7121",
+      "status": "Expected",
+      "codeshareStatus": "IsOperator",
+      "isCargo": false,
+      "airline": {
+        "name": "Air Canada",
+        "iata": "AC",
+        "icao": "ACA"
+      }
+    }
+  ]
+}

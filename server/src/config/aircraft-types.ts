@@ -94,7 +94,12 @@ const TWIN_WIDEBODY_TYPES = [
 
 const WIDEBODY_TYPES = [...QUAD_TYPES, ...TWIN_WIDEBODY_TYPES] as const;
 
-const FREIGHTER_TYPES = ["B77F", "B74S", "B74R", "MD11", "BLCF", "A124", "C5M", "B77L"] as const;
+/**
+ * Airframes that are freighters by type. B77L is deliberately absent: it is the
+ * passenger 777-200LR and the freighter is B77F. Listing it here labelled every
+ * Air Canada 777-200LR as cargo.
+ */
+const FREIGHTER_TYPES = ["B77F", "B74S", "B74R", "MD11", "BLCF", "A124", "C5M"] as const;
 
 /**
  * Cargo operators, matched on the leading letters of the callsign. Kept short and

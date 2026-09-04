@@ -10,6 +10,8 @@ import type { ConfigDto, InboundSnapshot } from "../src/api";
  */
 
 const config: ConfigDto = {
+  upcomingEnabled: false,
+  upcomingCategories: ["DOUBLE_DECK", "QUAD", "WIDEBODY"],
   sources: [
     { label: "ADS-B data by adsb.lol", url: "https://adsb.lol" },
     { label: "Routes by adsbdb.com", url: "https://www.adsbdb.com" },

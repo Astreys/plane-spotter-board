@@ -69,6 +69,57 @@ export interface InboundAircraft {
   seenPosSec: number;
 }
 
+/** One scheduled arrival on the Upcoming board. */
+export interface UpcomingFlight {
+  /** Commercial flight number, e.g. "AC 855". */
+  number: string | null;
+  callsign: string | null;
+  airline: string | null;
+  /** The operator's own word for it: "Expected", "Delayed", "Arrived". */
+  status: string | null;
+  isCargo: boolean;
+
+  /** ICAO designator, normalised from the vendor's free-text model. */
+  type: string | null;
+  /** The vendor's free text, kept so an unmapped model is still legible. */
+  model: string | null;
+  typeName: string | null;
+  registration: string | null;
+  /** ICAO 24-bit address — the same key the live board uses, when supplied. */
+  hex: string | null;
+
+  origin: { icao: string | null; iata: string | null; name: string | null } | null;
+
+  /** Best known arrival time, ISO 8601 UTC. */
+  arrivalTime: string;
+  /** True when that time is the operator's revision rather than the schedule. */
+  arrivalIsRevised: boolean;
+  terminal: string | null;
+  gate: string | null;
+
+  categories: CategoryId[];
+}
+
+export interface UpcomingSnapshot {
+  airport: { icao: string; iata: string; name: string; timeZone: string };
+  /** When the schedule was last fetched, epoch ms. 0 before the first fetch. */
+  updatedAt: number;
+  ageSeconds: number;
+  /** True when the schedule is off, either unconfigured or out of quota. */
+  unavailable: boolean;
+  /** Why it is unavailable, or the last failure while serving cache. */
+  error: string | null;
+  /** How far ahead the window reaches, hours. */
+  windowHours: number;
+  /** Everything the window held, before filtering to big aircraft. */
+  totalScheduled: number;
+  flights: UpcomingFlight[];
+  /** Models we could not map to a designator. Surfaced rather than hidden. */
+  unrecognisedModels: string[];
+  /** Remaining monthly API units, when the upstream tells us. */
+  unitsRemaining: number | null;
+}
+
 export interface SnapshotSource {
   /** Aggregator host that served the current data. */
   host: string;
@@ -111,6 +162,10 @@ export interface CategoryDto {
 }
 
 export interface ConfigDto {
+  /** Whether the Upcoming board is configured. False hides the tab entirely. */
+  upcomingEnabled: boolean;
+  /** Airframe categories the Upcoming board is limited to. */
+  upcomingCategories: CategoryId[];
   /** Every upstream we take data from, for the credits line in the footer. */
   sources: Array<{ label: string; url: string }>;
   airports: Array<{

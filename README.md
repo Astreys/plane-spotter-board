@@ -24,7 +24,7 @@ First data lands within a poll interval (15s). `npm run dev:server` and
 `npm run dev:web` run the halves separately.
 
 ```bash
-npm test        # 129 tests across server and web
+npm test        # 165 tests across server and web
 npm run build   # typecheck both, compile the server, bundle the frontend
 ```
 
@@ -71,6 +71,7 @@ web/
 | --- | --- |
 | `GET /api/airport/:icao/inbound` | Current board as JSON. `?categories=WIDEBODY,FREIGHTER`, `?within=30` |
 | `GET /api/airport/:icao/stream` | Same payload pushed over SSE on every poll |
+| `GET /api/airport/:icao/upcoming` | Todays scheduled big arrivals; empty when no key is set |
 | `GET /api/config` | Airports, category chips, detection thresholds, attribution |
 | `GET /api/photo/:hex` | Cached planespotters.net lookup; `photo: null` on any miss |
 | `GET /api/health` | Per-poller freshness; 503 until the first snapshot lands |
@@ -100,6 +101,33 @@ AIRPORT=CYVR npx tsx scripts/inspect.ts
 It prints the board plus a tally of why everything else was rejected, which is
 how you tell "the rules are wrong" from "nothing is landing".
 
+## Upcoming big aircraft
+
+A second tab lists todays scheduled arrivals, filtered to double deck, quad and
+widebody only. It answers the question the live board cannot: is anything worth
+coming out for later today?
+
+Schedules come from [AeroDataBox](https://www.aerodatabox.com), which is the only
+upstream needing a key, and the only one metered by the month. Set
+`AERODATABOX_API_KEY` in `server/.env` to switch it on.
+
+**It is optional.** Without a key the schedule poller never starts, `/api/config`
+reports `upcomingEnabled: false`, and the tab is hidden. The live board is
+unaffected, so a fresh clone still runs with no signup.
+
+Budget shapes the design: the free tier gives 600 units a month and one fetch
+costs 2, so roughly 300 fetches. The server refreshes on a three-hour timer and
+every browser reads that cache - a fetch per request would exhaust the month in
+an afternoon.
+
+The vendor reports aircraft as free text rather than ICAO designators, so
+[`schedule/model-codes.ts`](server/src/schedule/model-codes.ts) normalises the
+model onto a designator and classification then runs through the same taxonomy
+the live board uses. Models it cannot place are reported in `unrecognisedModels`
+rather than dropped.
+
+Times are the operator schedule, not observation. A revision is only marked when
+it actually moves the time.
 ## Where a flight came from
 
 The ADS-B feed carries no route — it knows a callsign, not a city pair. Routes
