@@ -1,0 +1,30 @@
+# Netlify hosts the frontend only. The API needs a long-lived process for the
+# poller and the SSE stream, which Functions cannot provide — see DEPLOY.md.
+#
+# Set VITE_API_BASE in the Netlify UI to the API origin, and set CORS_ORIGINS on
+# the API to this site's origin.
+
+[build]
+  base = "."
+  command = "npm run build --workspace web"
+  publish = "web/dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# Vite fingerprints its assets, so they can be cached indefinitely.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+# Single-page app: every path serves the shell.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

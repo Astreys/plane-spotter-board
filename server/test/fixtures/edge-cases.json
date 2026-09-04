@@ -1,0 +1,64 @@
+{
+  "now": 1788488310828,
+  "total": 12,
+  "ac": [
+    {
+      "hex": "4bb279", "flight": "UAE203  ", "r": "A6-EUV", "t": "A388",
+      "alt_baro": 4200, "gs": 220.4, "track": 62.0, "baro_rate": -1088,
+      "lat": 43.3600, "lon": -80.0200, "seen_pos": 0.4
+    },
+    {
+      "hex": "a1b2c3", "flight": "FDX1234 ", "r": "N572FE", "t": "MD11",
+      "alt_baro": 5800, "gs": 245.0, "track": 55.0, "baro_rate": -900,
+      "lat": 43.2900, "lon": -80.1500, "seen_pos": 1.1
+    },
+    {
+      "hex": "c01234", "flight": "CJT501  ", "r": "C-FMCJ", "t": "B763",
+      "alt_baro": 3100, "gs": 200.0, "track": 58.0, "baro_rate": -700,
+      "lat": 43.4500, "lon": -79.9500, "seen_pos": 2.0
+    },
+    {
+      "hex": "ded001", "flight": "ACA123  ", "r": "C-FIVR", "t": "B77W",
+      "alt_baro": 11500, "gs": 320.0, "track": 240.0, "baro_rate": -1600,
+      "lat": 43.9100, "lon": -78.9200, "seen_pos": 1.2
+    },
+    {
+      "hex": "gr0und", "flight": "WJA111  ", "r": "C-GWJA", "t": "B738",
+      "alt_baro": "ground", "gs": 12.0, "track": 90.0,
+      "lat": 43.6780, "lon": -79.6250, "seen_pos": 0.2
+    },
+    {
+      "hex": "dep001", "flight": "ACA456  ", "r": "C-GITS", "t": "A333",
+      "alt_baro": 4500, "gs": 260.0, "track": 55.0, "baro_rate": 2400,
+      "lat": 43.4000, "lon": -79.9000, "seen_pos": 0.5
+    },
+    {
+      "hex": "hi0001", "flight": "DAL900  ", "r": "N802DZ", "t": "A339",
+      "alt_baro": 33000, "gs": 480.0, "track": 60.0, "baro_rate": -200,
+      "lat": 43.2000, "lon": -80.3000, "seen_pos": 0.6
+    },
+    {
+      "hex": "far001", "flight": "BAW93   ", "r": "G-STBA", "t": "B77W",
+      "alt_baro": 9000, "gs": 400.0, "track": 270.0, "baro_rate": -1200,
+      "lat": 44.6000, "lon": -78.0000, "seen_pos": 0.9
+    },
+    {
+      "hex": "awy001", "flight": "SWG700  ", "r": "C-GTVF", "t": "B738",
+      "alt_baro": 4000, "gs": 250.0, "track": 250.0, "baro_rate": -400,
+      "lat": 43.4000, "lon": -79.9000, "seen_pos": 0.7
+    },
+    {
+      "hex": "stl001", "flight": "QTR777  ", "r": "A7-BAA", "t": "B77W",
+      "alt_baro": 5000, "gs": 240.0, "track": 55.0, "baro_rate": -800,
+      "lat": 43.4000, "lon": -79.9000, "seen_pos": 320.5
+    },
+    {
+      "hex": "unk001", "flight": "  XYZ9  ",
+      "alt_baro": 3000, "gs": 180.0, "track": 55.0, "baro_rate": -600,
+      "lat": 43.4500, "lon": -79.9000, "seen_pos": 1.0
+    },
+    {
+      "flight": "NOHEX1  ", "t": "B738", "alt_baro": 3000, "lat": 43.5, "lon": -79.7
+    }
+  ]
+}
