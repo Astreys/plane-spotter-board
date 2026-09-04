@@ -33,6 +33,16 @@ npm test         # 101 tests, server + web
 npm run build    # typecheck both, compile server, bundle frontend
 ```
 
+`npm run dev` runs both halves under `concurrently --kill-others`, so stopping it
+takes the whole tree down. It deliberately does **not** use `npm-run-all`, which
+is unmaintained and leaves `tsx watch` and `vite` running on Windows after a
+Ctrl+C; those orphans accumulate until a later run dies with
+`exited with 3221226505` (`0xC0000409`).
+
+If you hit that, something is still stranded from an earlier run. Find it with
+`Get-CimInstance Win32_Process -Filter "Name='node.exe'"` and check the command
+lines before killing anything — other projects' dev servers look much the same.
+
 To check the inbound rules against live traffic without a browser:
 
 ```bash
