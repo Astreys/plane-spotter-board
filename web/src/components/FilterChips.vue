@@ -51,7 +51,7 @@ const inGroup = (groupId: string): CategoryDto[] =>
 
 .chips__row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.5rem;
   min-width: 0;
 }
@@ -59,23 +59,24 @@ const inGroup = (groupId: string): CategoryDto[] =>
 .chips__label {
   flex: 0 0 auto;
   width: 4.2rem;
+  /* Sit on the first line of chips even when the row wraps to two. */
+  padding-top: 0.72rem;
   font-size: 0.66rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
 }
 
-/* Chip rows scroll sideways rather than wrapping: one thumb, one line. */
+/*
+ * Chips wrap rather than scrolling sideways. A row that scrolls hides whichever
+ * chip does not fit, and the hidden one is often the only chip with traffic
+ * behind it - which defeats the point of showing counts at all.
+ */
 .chips__scroll {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.35rem;
-  overflow-x: auto;
-  scrollbar-width: none;
-  padding-bottom: 2px;
-}
-
-.chips__scroll::-webkit-scrollbar {
-  display: none;
+  min-width: 0;
 }
 
 .chip {
