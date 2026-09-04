@@ -147,12 +147,16 @@ onMounted(async () => {
       <p>
         Arrival times are rough estimates from ground speed and distance, not a schedule.
       </p>
-      <p v-if="board.snapshot.value">
+      <p v-if="config">
+        <template v-for="(source, index) in config.sources" :key="source.url">
+          <span v-if="index > 0"> · </span>
+          <a :href="source.url" target="_blank" rel="noopener">{{ source.label }}</a>
+        </template>
+      </p>
+      <p v-else-if="board.snapshot.value">
         <a :href="board.snapshot.value.source.attribution.url" target="_blank" rel="noopener">
           {{ board.snapshot.value.source.attribution.label }}
         </a>
-        · photos by
-        <a href="https://www.planespotters.net" target="_blank" rel="noopener">planespotters.net</a>
       </p>
       <p class="footer__note">Non-commercial use. Not for navigation.</p>
     </footer>

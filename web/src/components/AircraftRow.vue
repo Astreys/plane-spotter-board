@@ -49,6 +49,38 @@ const headlineIsCode = computed(() => !props.aircraft.typeName && !!props.aircra
 
 /** Only worth repeating in the metadata when the headline is the name. */
 const code = computed(() => (props.aircraft.typeName ? props.aircraft.type : null));
+
+const codeOf = (airport: { iata: string | null; icao: string | null } | null): string =>
+  airport?.iata ?? airport?.icao ?? "?";
+
+/** Only render the line when there is an actual pair to show. */
+const route = computed(() => {
+  const value = props.aircraft.route;
+  if (!value || (!value.origin && !value.destination)) return null;
+  return value;
+});
+
+const from = computed(() => codeOf(route.value?.origin ?? null));
+const to = computed(() => codeOf(route.value?.destination ?? null));
+
+/** Where it started is the part a spotter actually wants; the code alone is terse. */
+const originCity = computed(() => route.value?.origin?.city ?? null);
+
+/**
+ * Spelled out on hover, and used as the accessible label — "CYYZ to CYVR" reads
+ * as nothing at all to a screen reader.
+ */
+const routeLabel = computed(() => {
+  const value = route.value;
+  if (!value) return "";
+  const origin = value.origin?.name ?? value.origin?.city ?? from.value;
+  const destination = value.destination?.name ?? value.destination?.city ?? to.value;
+  const base = `From ${origin} to ${destination}`;
+  return value.arrivesHere
+    ? base
+    : `${base}. This is the scheduled route for callsign ${props.aircraft.callsign ?? ""}`.trim() +
+        ", which does not end at this airport — it may be a different leg.";
+});
 </script>
 
 <template>
@@ -77,6 +109,21 @@ const code = computed(() => (props.aircraft.typeName ? props.aircraft.type : nul
         <span>{{ altitude }}</span>
         <span>{{ aircraft.distanceNm }} nm {{ aircraft.fromDirection }}</span>
         <span v-if="descent" class="row__descent" :data-state="descent">{{ descent }}</span>
+      </div>
+
+      <div
+        v-if="route"
+        class="row__route"
+        :class="{ 'row__route--elsewhere': !route.arrivesHere }"
+        :title="routeLabel"
+      >
+        <span class="row__route-pair" :aria-label="routeLabel">
+          <span class="row__airport">{{ from }}</span>
+          <span class="row__arrow" aria-hidden="true">→</span>
+          <span class="row__airport">{{ to }}</span>
+        </span>
+        <span v-if="originCity" class="row__route-city">{{ originCity }}</span>
+        <span v-if="!route.arrivesHere" class="row__route-flag">scheduled</span>
       </div>
     </div>
   </li>
@@ -186,6 +233,58 @@ const code = computed(() => (props.aircraft.typeName ? props.aircraft.type : nul
 
 .row__descent[data-state="descending"] {
   color: var(--good);
+}
+
+.row__route {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.45rem;
+  margin-top: 0.2rem;
+  font-size: 0.76rem;
+  min-width: 0;
+}
+
+.row__route-pair {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  font-family: var(--mono);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text);
+}
+
+.row__arrow {
+  color: var(--muted-2);
+  font-weight: 400;
+}
+
+.row__route-city {
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * The scheduled route does not end at the airport being watched. Shown, because
+ * hiding it would lose real information, but dimmed and flagged so it is never
+ * read as "this aircraft came from there just now".
+ */
+.row__route--elsewhere .row__route-pair {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.row__route-flag {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+  background: var(--surface-2);
+  color: var(--muted-2);
 }
 
 </style>
