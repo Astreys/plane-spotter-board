@@ -1,12 +1,17 @@
 /**
  * One schedule poller per tracked airport.
  *
- * Same shape as the live poller — the server fetches, the browser reads cache —
- * but on a multi-hour timer instead of a 15-second one, because the upstream is
- * metered by the month. See the budget note in client.ts.
+ * Same shape as the live poller - the server fetches, the browser reads cache -
+ * but the upstream is metered by the month, so the refresh is measured in hours.
+ * See the budget note in client.ts.
  *
- * A schedule that is a few hours old is still a useful schedule, so failures keep
- * serving the last good fetch and back off rather than blanking the tab.
+ * It deliberately does NOT sleep on one long setTimeout. A three-hour timer set
+ * before a laptop suspends does not fire on time, and a schedule that silently
+ * froze for a day is exactly the bug this replaced: the board went on showing an
+ * empty Upcoming tab while real widebodies were landing. Instead a short
+ * heartbeat asks a wall-clock question - is the cache older than the refresh
+ * interval? - which survives suspend, resume and clock jumps alike. The heartbeat
+ * costs nothing upstream; only the answer does.
  */
 
 import type { Airport } from "../config/airports.js";
@@ -16,13 +21,19 @@ import type { UpcomingFlight, UpcomingSnapshot } from "../types.js";
 import { fetchArrivals } from "./client.js";
 import { selectUpcoming } from "./normalize.js";
 
-const MAX_BACKOFF_MS = 60 * 60_000;
+/** How often to ask whether a fetch is due. Not how often we fetch. */
+const HEARTBEAT_MS = 5 * 60_000;
+
+/** First retry after a failure. Grows from here, never past the refresh interval. */
+const BASE_RETRY_MS = 10 * 60_000;
 
 interface Cached {
   flights: UpcomingFlight[];
   totalScheduled: number;
   unrecognisedModels: string[];
   fetchedAt: number;
+  /** End of the window this data describes; past it, the cache says nothing. */
+  coversUntil: number;
   unitsRemaining: number | null;
 }
 
@@ -30,6 +41,7 @@ export class SchedulePoller {
   private cache: Cached | null = null;
   private consecutiveFailures = 0;
   private lastError: string | null = null;
+  private lastAttemptAt = 0;
   private timer: NodeJS.Timeout | null = null;
   private stopped = false;
   private inFlight = false;
@@ -47,29 +59,45 @@ export class SchedulePoller {
   start(): void {
     if (!this.enabled || this.timer || this.stopped) return;
     void this.tick();
+    this.timer = setInterval(() => void this.tick(), HEARTBEAT_MS);
+    this.timer.unref?.();
   }
 
   stop(): void {
     this.stopped = true;
-    if (this.timer) clearTimeout(this.timer);
+    if (this.timer) clearInterval(this.timer);
     this.timer = null;
   }
 
-  private schedule(delayMs: number): void {
-    if (this.stopped) return;
-    if (this.timer) clearTimeout(this.timer);
-    this.timer = setTimeout(() => void this.tick(), delayMs);
-    this.timer.unref?.();
+  /**
+   * Wall-clock decision, so a suspended machine simply refreshes on resume rather
+   * than waiting out a timer that never ran.
+   */
+  private fetchDue(now: number): boolean {
+    if (this.consecutiveFailures > 0) {
+      const backoff = Math.min(
+        BASE_RETRY_MS * 2 ** (this.consecutiveFailures - 1),
+        config.scheduleRefreshMs,
+      );
+      return now - this.lastAttemptAt >= backoff;
+    }
+    if (!this.cache) return true;
+    return now - this.cache.fetchedAt >= config.scheduleRefreshMs;
   }
 
   private async tick(): Promise<void> {
     if (this.stopped || this.inFlight) return;
+    const now = Date.now();
+    if (!this.fetchDue(now)) return;
+
     this.inFlight = true;
+    this.lastAttemptAt = now;
 
     try {
+      const from = new Date();
       const result = await fetchArrivals({
         icao: this.airport.icao,
-        from: new Date(),
+        from,
         hours: config.scheduleWindowHours,
       });
 
@@ -81,17 +109,11 @@ export class SchedulePoller {
       if (result.status === "error") {
         this.consecutiveFailures += 1;
         this.lastError = result.message;
-        const backoff = Math.min(
-          config.scheduleRefreshMs * 2 ** Math.min(this.consecutiveFailures, 4),
-          MAX_BACKOFF_MS,
-        );
         this.log.warn("schedule fetch failed", {
           airport: this.airport.icao,
           failures: this.consecutiveFailures,
-          retryInMs: backoff,
           error: result.message,
         });
-        this.schedule(backoff);
         return;
       }
 
@@ -101,6 +123,7 @@ export class SchedulePoller {
         totalScheduled: selected.totalScheduled,
         unrecognisedModels: selected.unrecognisedModels,
         fetchedAt: Date.now(),
+        coversUntil: from.getTime() + config.scheduleWindowHours * 3_600_000,
         unitsRemaining: result.unitsRemaining,
       };
       this.consecutiveFailures = 0;
@@ -112,16 +135,18 @@ export class SchedulePoller {
         big: selected.flights.length,
         unitsRemaining: result.unitsRemaining,
       });
-
-      this.schedule(config.scheduleRefreshMs);
     } finally {
       this.inFlight = false;
     }
   }
 
   /**
-   * Current view of the cache. Past arrivals are dropped at read time rather than
-   * fetch time, so a three-hour-old fetch does not show flights that have landed.
+   * Current view of the cache. Past arrivals are dropped at read time, so a cache
+   * fetched two hours ago still reads correctly.
+   *
+   * A cache whose window has run out is reported as unavailable rather than as an
+   * empty list: "nothing big due" and "we could not refresh" look identical to a
+   * spotter otherwise, and only one of them is worth acting on.
    */
   snapshot(): UpcomingSnapshot {
     const airport = {
@@ -131,33 +156,42 @@ export class SchedulePoller {
       timeZone: this.airport.timeZone,
     };
 
+    const base = {
+      airport,
+      windowHours: config.scheduleWindowHours,
+      unitsRemaining: this.cache?.unitsRemaining ?? null,
+    };
+
     if (!this.cache) {
       return {
-        airport,
+        ...base,
         updatedAt: 0,
         ageSeconds: 0,
+        stale: true,
         unavailable: true,
         error: this.enabled ? (this.lastError ?? "no schedule yet") : "no API key configured",
-        windowHours: config.scheduleWindowHours,
         totalScheduled: 0,
         flights: [],
         unrecognisedModels: [],
-        unitsRemaining: null,
       };
     }
 
     const now = Date.now();
+    const ageMs = now - this.cache.fetchedAt;
+    const expired = now >= this.cache.coversUntil;
+
     return {
-      airport,
+      ...base,
       updatedAt: this.cache.fetchedAt,
-      ageSeconds: Math.round((now - this.cache.fetchedAt) / 1000),
-      unavailable: false,
-      error: this.lastError,
-      windowHours: config.scheduleWindowHours,
+      ageSeconds: Math.round(ageMs / 1000),
+      stale: ageMs > config.scheduleRefreshMs || this.consecutiveFailures > 0,
+      unavailable: expired,
+      error: expired ? (this.lastError ?? "schedule is out of date") : this.lastError,
       totalScheduled: this.cache.totalScheduled,
-      flights: this.cache.flights.filter((f) => new Date(f.arrivalTime).getTime() >= now),
+      flights: expired
+        ? []
+        : this.cache.flights.filter((f) => new Date(f.arrivalTime).getTime() >= now),
       unrecognisedModels: this.cache.unrecognisedModels,
-      unitsRemaining: this.cache.unitsRemaining,
     };
   }
 }

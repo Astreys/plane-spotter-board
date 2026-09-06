@@ -105,7 +105,13 @@ export interface UpcomingSnapshot {
   /** When the schedule was last fetched, epoch ms. 0 before the first fetch. */
   updatedAt: number;
   ageSeconds: number;
-  /** True when the schedule is off, either unconfigured or out of quota. */
+  /** True when the data is older than a refresh interval and could not be renewed. */
+  stale: boolean;
+  /**
+   * True when there is nothing usable to show: unconfigured, never fetched, or
+   * holding a cache so old its window no longer reaches the present. An empty
+   * flights list with this false means genuinely nothing big is due.
+   */
   unavailable: boolean;
   /** Why it is unavailable, or the last failure while serving cache. */
   error: string | null;
