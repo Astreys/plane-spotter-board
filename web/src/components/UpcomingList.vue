@@ -42,6 +42,17 @@ function clock(iso: string): string {
   return new Intl.DateTimeFormat("en-CA", options).format(new Date(iso));
 }
 
+/** Plain words for how old the schedule is, for the staleness notice. */
+const agoText = computed(() => {
+  const seconds = snapshot.value?.ageSeconds ?? 0;
+  if (seconds < 90) return "just now";
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 90) return minutes + " min ago";
+  const hours = Math.round(minutes / 60);
+  if (hours < 36) return hours + " hours ago";
+  return Math.round(hours / 24) + " days ago";
+});
+
 function minutesAway(iso: string): number {
   return Math.round((new Date(iso).getTime() - Date.now()) / 60000);
 }
@@ -79,8 +90,15 @@ const badgesFor = (flight: UpcomingFlight): string[] =>
     <p v-else-if="error" class="upcoming__note upcoming__note--error">{{ error }}</p>
 
     <div v-else-if="snapshot?.unavailable" class="upcoming__empty">
-      <p class="upcoming__headline">Schedule unavailable</p>
-      <p class="upcoming__detail">{{ snapshot.error ?? "Not configured." }}</p>
+      <p class="upcoming__headline">Schedule out of date</p>
+      <p class="upcoming__detail">
+        <template v-if="snapshot.updatedAt">
+          Last refreshed {{ agoText }}, and the server could not renew it.
+          <br />
+          {{ snapshot.error }}
+        </template>
+        <template v-else>{{ snapshot.error ?? "Not configured." }}</template>
+      </p>
     </div>
 
     <div v-else-if="!snapshot?.flights.length" class="upcoming__empty">
@@ -90,9 +108,16 @@ const badgesFor = (flight: UpcomingFlight): string[] =>
       <p class="upcoming__detail">
         {{ snapshot?.totalScheduled ?? 0 }} arrivals scheduled, none of them widebody.
       </p>
+      <p v-if="snapshot?.stale" class="upcoming__warn">
+        Last refreshed {{ agoText }} - this may be out of date.
+      </p>
     </div>
 
     <template v-else>
+      <p v-if="snapshot?.stale" class="upcoming__warn upcoming__warn--banner">
+        Last refreshed {{ agoText }} - this may be out of date.
+      </p>
+
       <div v-for="group in groups" :key="group.label" class="upcoming__day">
         <h2 class="upcoming__daylabel">{{ group.label }}</h2>
         <ul class="upcoming__list">
@@ -171,6 +196,20 @@ const badgesFor = (flight: UpcomingFlight): string[] =>
   font-size: 0.82rem;
   color: var(--muted);
   line-height: 1.5;
+}
+
+.upcoming__warn {
+  margin: 0.6rem 0 0;
+  font-size: 0.76rem;
+  color: var(--warn);
+}
+
+/* Above the list, so an ageing schedule is admitted before it is read. */
+.upcoming__warn--banner {
+  margin: 0;
+  padding: 0.5rem 0.9rem;
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
+  border-bottom: 1px solid var(--line);
 }
 
 .upcoming__daylabel {

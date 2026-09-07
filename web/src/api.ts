@@ -78,6 +78,7 @@ export interface UpcomingSnapshot {
   airport: { icao: string; iata: string; name: string; timeZone: string };
   updatedAt: number;
   ageSeconds: number;
+  stale: boolean;
   unavailable: boolean;
   error: string | null;
   windowHours: number;

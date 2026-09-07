@@ -37,6 +37,7 @@ const upcoming: UpcomingSnapshot = {
   airport: { icao: "CYYZ", iata: "YYZ", name: "Toronto Pearson", timeZone: "America/Toronto" },
   updatedAt: Date.now(),
   ageSeconds: 30,
+  stale: false,
   unavailable: false,
   error: null,
   windowHours: 12,
@@ -208,7 +209,43 @@ describe("the Upcoming tab", () => {
     expect(wrapper.findAll("button.chip")).toHaveLength(0);
   });
 
-  it("explains an unavailable schedule instead of showing an empty list", async () => {
+  it("says the schedule is out of date rather than claiming nothing is due", async () => {
+    // The reported bug: a day-old cache emptied itself and read as "nothing big due"
+    // while widebodies were actually landing.
+    const wrapper = await mountApp(baseConfig, {
+      ...upcoming,
+      unavailable: true,
+      stale: true,
+      ageSeconds: 31 * 3600,
+      updatedAt: Date.now() - 31 * 3600 * 1000,
+      error: "fetch failed",
+      flights: [],
+    });
+    await wrapper.findAll("button.tabs__tab")[1]!.trigger("click");
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Schedule out of date");
+    expect(wrapper.text()).toContain("31 hours ago");
+    expect(wrapper.text()).toContain("fetch failed");
+    expect(wrapper.text()).not.toContain("Nothing big due");
+  });
+
+  it("warns above the list when serving an ageing but usable schedule", async () => {
+    const wrapper = await mountApp(baseConfig, {
+      ...upcoming,
+      stale: true,
+      ageSeconds: 5 * 3600,
+    });
+    await wrapper.findAll("button.tabs__tab")[1]!.trigger("click");
+    await flushPromises();
+
+    // The flights are still shown, but never silently.
+    expect(wrapper.findAll("li.flight")).toHaveLength(2);
+    expect(wrapper.find(".upcoming__warn--banner").exists()).toBe(true);
+    expect(wrapper.text()).toContain("5 hours ago");
+  });
+
+  it("explains an unconfigured schedule instead of showing an empty list", async () => {
     const wrapper = await mountApp(baseConfig, {
       ...upcoming,
       unavailable: true,
@@ -218,7 +255,7 @@ describe("the Upcoming tab", () => {
     await wrapper.findAll("button.tabs__tab")[1]!.trigger("click");
     await flushPromises();
 
-    expect(wrapper.text()).toContain("Schedule unavailable");
+    expect(wrapper.text()).toContain("Schedule out of date");
     expect(wrapper.text()).toContain("quota exhausted");
   });
 

@@ -29,7 +29,7 @@ with the raw code visible.
 
 ```bash
 npm run dev      # API on :8787, frontend on :5173 with /api proxied
-npm test         # 165 tests, server + web
+npm test         # 178 tests, server + web
 npm run build    # typecheck both, compile server, bundle frontend
 ```
 
@@ -116,3 +116,19 @@ airport being watched, and that is common — the route database stores one
 canonical city pair per callsign. Never render a route as "where this aircraft
 came from" without checking it. `arrivesAt()` in `server/src/domain/route.ts` is
 the single place that decides, and the UI dims and marks the rest.
+
+## Schedule refresh uses a heartbeat, not a long timer
+
+`SchedulePoller` ticks every five minutes and asks a wall-clock question — is the
+cache older than the refresh interval? — rather than sleeping on one three-hour
+`setTimeout`. A long timer does not survive a laptop suspending: one set before a
+sleep simply never fires, and the schedule silently froze for a day while the
+board showed an empty Upcoming tab.
+
+The heartbeat costs nothing upstream. Only the answer does.
+
+**A stale cache must never render as "nothing due".** When the cached window no
+longer reaches the present, `snapshot()` reports `unavailable` with the age and
+the last error; when it is merely ageing, `stale` is set and the UI says so above
+the list. "Nothing big is due" and "we could not refresh" look identical to a
+spotter otherwise, and only one of them is worth acting on.
