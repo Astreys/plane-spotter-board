@@ -9,6 +9,30 @@
 export type CategoryId = string;
 export type GroupId = string;
 
+export interface RouteAirport {
+  iata: string | null;
+  icao: string | null;
+  name: string | null;
+  city: string | null;
+  countryIso: string | null;
+}
+
+/**
+ * The callsign's scheduled route.
+ *
+ * `arrivesHere` is false whenever the scheduled destination is not the airport
+ * being watched — which happens often, because the route database keys on
+ * callsign and returns a typical city pair rather than today's leg. The row marks
+ * those instead of presenting them as this arrival's route.
+ */
+export interface FlightRoute {
+  origin: RouteAirport | null;
+  destination: RouteAirport | null;
+  airline: string | null;
+  callsignIata: string | null;
+  arrivesHere: boolean;
+}
+
 export interface InboundAircraft {
   hex: string;
   callsign: string | null;
@@ -26,7 +50,42 @@ export interface InboundAircraft {
   fromDirection: string;
   minutesOut: number | null;
   categories: CategoryId[];
+  route: FlightRoute | null;
   seenPosSec: number;
+}
+
+/** One scheduled arrival on the Upcoming board. */
+export interface UpcomingFlight {
+  number: string | null;
+  callsign: string | null;
+  airline: string | null;
+  status: string | null;
+  isCargo: boolean;
+  type: string | null;
+  model: string | null;
+  typeName: string | null;
+  registration: string | null;
+  hex: string | null;
+  origin: { icao: string | null; iata: string | null; name: string | null } | null;
+  arrivalTime: string;
+  arrivalIsRevised: boolean;
+  terminal: string | null;
+  gate: string | null;
+  categories: CategoryId[];
+}
+
+export interface UpcomingSnapshot {
+  airport: { icao: string; iata: string; name: string; timeZone: string };
+  updatedAt: number;
+  ageSeconds: number;
+  stale: boolean;
+  unavailable: boolean;
+  error: string | null;
+  windowHours: number;
+  totalScheduled: number;
+  flights: UpcomingFlight[];
+  unrecognisedModels: string[];
+  unitsRemaining: number | null;
 }
 
 export interface Attribution {
@@ -64,6 +123,10 @@ export interface CategoryDto {
 }
 
 export interface ConfigDto {
+  upcomingEnabled: boolean;
+  upcomingCategories: CategoryId[];
+  /** Every upstream we take data from, for the credits line in the footer. */
+  sources: Array<{ label: string; url: string }>;
   airports: Array<{ icao: string; iata: string; name: string; city: string; tracked: boolean }>;
   defaultAirport: string;
   groups: Array<{ id: GroupId; label: string }>;
@@ -106,6 +169,19 @@ export async function fetchInbound(icao: string, signal?: AbortSignal): Promise<
   const response = await fetch(apiUrl(`/api/airport/${icao}/inbound`), { signal });
   if (!response.ok) throw new Error(`inbound request failed: ${response.status}`);
   return (await response.json()) as InboundSnapshot;
+}
+
+/**
+ * The schedule refreshes on the server every few hours, so the browser asking
+ * again on a tab switch costs nothing upstream - it reads the same cache.
+ */
+export async function fetchUpcoming(
+  icao: string,
+  signal?: AbortSignal,
+): Promise<UpcomingSnapshot> {
+  const response = await fetch(apiUrl("/api/airport/" + icao + "/upcoming"), { signal });
+  if (!response.ok) throw new Error("upcoming request failed: " + response.status);
+  return (await response.json()) as UpcomingSnapshot;
 }
 
 /**

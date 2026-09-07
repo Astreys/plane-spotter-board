@@ -1,4 +1,21 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { AIRPORTS, findAirport, type Airport } from "./airports.js";
+
+/**
+ * Load server/.env if it exists, so an API key lives in a gitignored file rather
+ * than in a shell profile. Node has done this natively since 20.12, so it costs
+ * no dependency. Real environment variables already set always win.
+ */
+(() => {
+  try {
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    // src/config -> server/, and dist/config -> server/ once compiled.
+    process.loadEnvFile(path.resolve(here, "../../.env"));
+  } catch {
+    // No .env, or an unreadable one. Both are fine — everything has a default.
+  }
+})();
 
 function num(value: string | undefined, fallback: number): number {
   if (value === undefined || value.trim() === "") return fallback;
@@ -50,6 +67,12 @@ export const config = {
   minRequestSpacingMs: num(process.env.MIN_REQUEST_SPACING_MS, 1_200),
   requestTimeoutMs: num(process.env.REQUEST_TIMEOUT_MS, 8_000),
 
+  /**
+   * Spacing for route lookups. A separate service from the aggregators with its
+   * own limit, so it gets its own budget rather than sharing theirs.
+   */
+  routeRequestSpacingMs: num(process.env.ROUTE_REQUEST_SPACING_MS, 350),
+
   userAgent:
     process.env.USER_AGENT ??
     "plane-spotter-board/0.1 (+https://github.com/Astreys/plane-spotter-board)",
@@ -61,6 +84,23 @@ export const config = {
 
   /** Serve web/dist from the API process. Handy for single-host deploys. */
   serveStatic: process.env.SERVE_STATIC === "true",
+
+  /**
+   * AeroDataBox key for the Upcoming board. Optional by design: without it the
+   * live board works exactly as before and the Upcoming tab simply hides, so a
+   * fresh clone still runs with no signup.
+   */
+  aeroDataBoxKey: (process.env.AERODATABOX_API_KEY ?? "").trim(),
+
+  /**
+   * How often to refresh the schedule. The free tier is 600 units a month and a
+   * FIDS call costs 2, so ~300 calls a month. At 3 hours that is 8 a day, 480 a
+   * month — comfortably inside the budget with room for restarts.
+   */
+  scheduleRefreshMs: num(process.env.SCHEDULE_REFRESH_MS, 3 * 60 * 60_000),
+
+  /** How far ahead the Upcoming board looks. The endpoint caps this at 12. */
+  scheduleWindowHours: Math.min(num(process.env.SCHEDULE_WINDOW_HOURS, 12), 12),
 } as const;
 
 export type Config = typeof config;
