@@ -29,7 +29,7 @@ with the raw code visible.
 
 ```bash
 npm run dev      # API on :8787, frontend on :5173 with /api proxied
-npm test         # 183 tests, server + web
+npm test         # 200 tests, server + web
 npm run build    # typecheck both, compile server, bundle frontend
 ```
 

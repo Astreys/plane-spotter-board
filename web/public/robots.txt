@@ -1,0 +1,7 @@
+# A personal, non-commercial plane spotting board.
+# Crawl the shell if you like; there is nothing behind /api worth indexing.
+User-agent: *
+Allow: /
+Disallow: /api/
+
+Sitemap: https://plane-spotter-board.netlify.app/sitemap.xml
