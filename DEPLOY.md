@@ -92,7 +92,21 @@ See `.env.example`. The ones that matter in production:
 | `SEARCH_RADIUS_NM` | `60` | API maximum is 250 |
 | `USER_AGENT` | app + repo URL | The aggregators ask for a real one. Keep it honest |
 | `CORS_ORIGINS` | empty (allow all) | Set this in production |
+| `AERODATABOX_API_KEY` | empty | Optional. Enables the Upcoming board. Server-side only — never put it in the Netlify build |
 | `SERVE_STATIC` | `false` | `true` to serve `web/dist` from the API |
+
+## Frontend build variables
+
+These are set in Netlify, not on the API host. Both are baked into the public
+bundle at build time, which is fine because neither is secret.
+
+| Variable | Notes |
+| --- | --- |
+| `VITE_API_BASE` | Absolute API origin. Empty means same origin |
+| `VITE_GA_ID` | Google Analytics measurement ID. Unset loads no analytics at all |
+
+Anything genuinely secret — the AeroDataBox key above all — belongs on the API
+host. A `VITE_` variable is public the moment the site ships.
 
 ## Scaling note
 
