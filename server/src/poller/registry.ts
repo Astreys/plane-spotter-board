@@ -22,7 +22,11 @@ export class PollerRegistry {
     this.routes = new RouteResolver(log);
     for (const airport of airports) {
       this.pollers.set(airport.icao, new AirportPoller(airport, log, this.routes));
-      this.schedules.set(airport.icao, new SchedulePoller(airport, log));
+      // A schedule costs metered units per airport, so only the configured
+      // subset gets one. The rest are live-board only.
+      if (config.scheduleAirports.includes(airport.icao)) {
+        this.schedules.set(airport.icao, new SchedulePoller(airport, log));
+      }
     }
   }
 
@@ -38,8 +42,10 @@ export class PollerRegistry {
     for (const schedule of this.schedules.values()) schedule.start();
     if (config.aeroDataBoxKey) {
       this.log.info("schedule pollers started", {
+        airports: [...this.schedules.keys()],
         refreshMs: config.scheduleRefreshMs,
         windowHours: config.scheduleWindowHours,
+        note: "fetches on demand, not on boot",
       });
     } else {
       this.log.info("schedule disabled", { reason: "AERODATABOX_API_KEY not set" });
@@ -64,7 +70,17 @@ export class PollerRegistry {
   }
 
   get scheduleEnabled(): boolean {
-    return config.aeroDataBoxKey !== "";
+    return config.aeroDataBoxKey !== "" && this.schedules.size > 0;
+  }
+
+  /** ICAO codes that have an Upcoming board. */
+  scheduleAirports(): string[] {
+    return [...this.schedules.keys()];
+  }
+
+  /** Whether this airport has an Upcoming board at all. */
+  hasSchedule(code: string): boolean {
+    return this.getSchedule(code) !== undefined;
   }
 
   /** Accepts ICAO or IATA, any case — spotters type "YYZ", not "CYYZ". */

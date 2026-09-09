@@ -22,6 +22,7 @@ export function registerMetaRoutes(app: FastifyInstance, registry: PollerRegistr
         name: airport.name,
         city: airport.city,
         tracked: registry.has(airport.icao),
+        hasSchedule: registry.hasSchedule(airport.icao),
       })),
       defaultAirport: config.airports[0]!.icao,
       groups: CATEGORY_GROUPS.map((group) => ({ ...group })),

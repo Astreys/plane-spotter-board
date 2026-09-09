@@ -24,7 +24,7 @@ First data lands within a poll interval (15s). `npm run dev:server` and
 `npm run dev:web` run the halves separately.
 
 ```bash
-npm test        # 183 tests across server and web
+npm test        # 207 tests across server and web
 npm run build   # typecheck both, compile the server, bundle the frontend
 ```
 
@@ -175,3 +175,81 @@ Arrival estimates are not a schedule and this is not for navigation.
 
 See [DEPLOY.md](DEPLOY.md) — including why the API is not itself on Netlify, and
 what it would cost to put it there.
+
+## Running the API from your own machine
+
+The frontend lives on Netlify; the API runs wherever you point it. Right now that
+is a laptop, reached over a Tailscale Funnel. Here is the whole loop after a
+reboot.
+
+### After restarting the computer
+
+**1. Make sure Tailscale is actually connected.**
+
+```bash
+tailscale status
+```
+
+If it says `Tailscale is starting. Please wait.` or `NoState`, the Windows
+service is running but the tray app is not. **Launch Tailscale from the Start
+menu** — the GUI owns the connection state, and restarting the service alone will
+not fix it. This is the single most likely thing to be wrong.
+
+**2. Check the funnel survived.** The serve config is stored, so it usually comes
+back on its own:
+
+```bash
+tailscale funnel status
+```
+
+Expect `https://spotter.tail649e75.ts.net` proxying to `127.0.0.1:8787`. If it is
+empty, re-open it:
+
+```bash
+tailscale funnel --bg 8787
+```
+
+**3. Start the API.**
+
+```bash
+npm run build          # only needed after pulling changes
+npm start              # compiled server, no file watching
+```
+
+`npm start` is the right thing for serving. `npm run dev` also works and adds the
+local frontend on :5173, which you do not need when the real one is on Netlify.
+
+**4. Confirm it is reachable from outside**, not just locally — the whole point
+is that it works from a phone on mobile data:
+
+```bash
+curl https://spotter.tail649e75.ts.net/api/health
+```
+
+### What breaks, and why
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| Board shows "Could not reach the board API" | Laptop asleep, Tailscale down, or API not started | Work through the four steps above |
+| `tailscale status` stuck at `NoState` | Tray app not running | Launch Tailscale from the Start menu |
+| `npm run dev` fails with exit 127 | `package.json` changed and dependencies are stale | `npm install` |
+| Upcoming tab says "Schedule out of date" | Schedule refresh failing, or the laptop slept through it | It self-heals within ~5 minutes of the API running again |
+| Upcoming tab empty but live board fine | Genuinely no widebodies due, or the AeroDataBox key is missing | Check `/api/airport/CYYZ/upcoming` for `unavailable` |
+
+### Things worth remembering
+
+**The board is only up while the laptop is.** Close the lid and the site goes to
+its error state. That is expected for now; moving the API to a hosted container
+is the fix when it matters.
+
+**The AeroDataBox quota is monthly and small.** 600 units, 2 per schedule fetch,
+so about 300 fetches. Restarting the API often costs units — each start fetches
+once. `/api/health` reports what is left.
+
+**`server/.env` is gitignored and holds the API key.** It does not travel with the
+repo, so a fresh clone needs it recreated. Without it everything still runs; the
+Upcoming tab simply hides.
+
+**Funnel puts port 8787 on the public internet.** Only that port, only that
+process, and the API is read-only — but the URL is genuinely reachable by anyone
+who has it.

@@ -13,13 +13,27 @@ let controller: AbortController | null = null;
  * The server refreshes the schedule every few hours against a metered upstream,
  * so this only reads its cache. Re-fetching on a tab switch costs nothing.
  */
-async function load(): Promise<void> {
+let retryTimer: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * The server fetches a schedule on demand, so the very first view of an airport
+ * usually returns "loading" and the data lands a second or two later. Poll a few
+ * times to cover that, then stop - this reads the server cache and costs no
+ * upstream units whatever the answer.
+ */
+async function load(attempt = 0): Promise<void> {
+  if (retryTimer) clearTimeout(retryTimer);
   controller?.abort();
   controller = new AbortController();
   loading.value = true;
   error.value = null;
   try {
-    snapshot.value = await fetchUpcoming(props.icao, controller.signal);
+    const result = await fetchUpcoming(props.icao, controller.signal);
+    snapshot.value = result;
+    if (result.loading && attempt < 6) {
+      retryTimer = setTimeout(() => void load(attempt + 1), 1500);
+      return;
+    }
   } catch (err) {
     if ((err as Error).name !== "AbortError") error.value = (err as Error).message;
   } finally {
@@ -27,9 +41,15 @@ async function load(): Promise<void> {
   }
 }
 
-onMounted(load);
-watch(() => props.icao, load);
-onBeforeUnmount(() => controller?.abort());
+onMounted(() => void load());
+watch(
+  () => props.icao,
+  () => void load(),
+);
+onBeforeUnmount(() => {
+  controller?.abort();
+  if (retryTimer) clearTimeout(retryTimer);
+});
 
 /** Local airport time, which is what a spotter standing there is reading. */
 function clock(iso: string): string {
@@ -85,7 +105,9 @@ const badgesFor = (flight: UpcomingFlight): string[] =>
 
 <template>
   <div class="upcoming">
-    <p v-if="loading && !snapshot" class="upcoming__note">Loading schedule...</p>
+    <p v-if="(loading && !snapshot) || snapshot?.loading" class="upcoming__note">
+      Fetching today's schedule...
+    </p>
 
     <p v-else-if="error" class="upcoming__note upcoming__note--error">{{ error }}</p>
 
