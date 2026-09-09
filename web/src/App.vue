@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { fetchConfig, type ConfigDto } from "./api";
 import { applyFilters, emptyStateText } from "./filter";
 import { useBoard } from "./composables/useBoard";
@@ -15,7 +15,19 @@ const showPhotos = ref(readPhotoPreference());
 
 /** Which board is on screen. Only ever "live" when there is no schedule key. */
 const tab = ref<"live" | "upcoming">("live");
-const showTabs = computed(() => config.value?.upcomingEnabled === true);
+/**
+ * Tabs appear only for an airport that actually has a schedule. Tracking an
+ * airport live is cheap; giving it an Upcoming board costs metered units, so not
+ * every airport in the dropdown has one.
+ */
+const showTabs = computed(
+  () => config.value?.airports.find((a) => a.icao === icao.value)?.hasSchedule === true,
+);
+
+// Switching to an airport without a schedule must not strand you on a dead tab.
+watch(showTabs, (has) => {
+  if (!has) tab.value = "live";
+});
 
 const board = useBoard(() => icao.value);
 

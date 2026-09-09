@@ -49,6 +49,26 @@ function resolveAirports(): Airport[] {
   return resolved;
 }
 
+/**
+ * Schedule airports must also be tracked - there is no live board to attach an
+ * Upcoming tab to otherwise. Unknown or untracked codes are dropped rather than
+ * throwing, so a stale env var degrades to "no schedule" instead of no boot.
+ */
+function resolveScheduleAirports(): string[] {
+  const tracked = resolveAirports().map((a) => a.icao);
+  const requested = list(process.env.SCHEDULE_AIRPORTS);
+  if (requested.length === 0) return tracked.slice(0, 1);
+
+  const resolved: string[] = [];
+  for (const code of requested) {
+    const airport = findAirport(code);
+    if (airport && tracked.includes(airport.icao) && !resolved.includes(airport.icao)) {
+      resolved.push(airport.icao);
+    }
+  }
+  return resolved;
+}
+
 export const config = {
   port: num(process.env.PORT, 8787),
   host: process.env.HOST ?? "0.0.0.0",
@@ -101,6 +121,18 @@ export const config = {
 
   /** How far ahead the Upcoming board looks. The endpoint caps this at 12. */
   scheduleWindowHours: Math.min(num(process.env.SCHEDULE_WINDOW_HOURS, 12), 12),
+
+  /**
+   * Which tracked airports get an Upcoming board.
+   *
+   * Separate from AIRPORTS because the live board and the schedule scale very
+   * differently: the aggregators are free and shared across airports, while a
+   * schedule costs metered units per airport. Tracking five airports live is
+   * cheap; giving all five a schedule would need five times the monthly budget.
+   *
+   * Defaults to the first tracked airport, which is the one the board opens on.
+   */
+  scheduleAirports: resolveScheduleAirports(),
 } as const;
 
 export type Config = typeof config;

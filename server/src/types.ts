@@ -108,6 +108,11 @@ export interface UpcomingSnapshot {
   /** True when the data is older than a refresh interval and could not be renewed. */
   stale: boolean;
   /**
+   * True when nothing has been fetched yet but a fetch is under way. Distinct from
+   * unavailable: the tab should say "loading", not "out of date".
+   */
+  loading: boolean;
+  /**
    * True when there is nothing usable to show: unconfigured, never fetched, or
    * holding a cache so old its window no longer reaches the present. An empty
    * flights list with this false means genuinely nothing big is due.
@@ -180,6 +185,8 @@ export interface ConfigDto {
     name: string;
     city: string;
     tracked: boolean;
+    /** Whether this airport has an Upcoming board. Not every tracked one does. */
+    hasSchedule: boolean;
   }>;
   defaultAirport: string;
   groups: Array<{ id: GroupId; label: string }>;

@@ -24,7 +24,7 @@ First data lands within a poll interval (15s). `npm run dev:server` and
 `npm run dev:web` run the halves separately.
 
 ```bash
-npm test        # 200 tests across server and web
+npm test        # 207 tests across server and web
 npm run build   # typecheck both, compile the server, bundle the frontend
 ```
 

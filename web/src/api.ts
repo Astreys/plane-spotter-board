@@ -79,6 +79,8 @@ export interface UpcomingSnapshot {
   updatedAt: number;
   ageSeconds: number;
   stale: boolean;
+  /** Nothing fetched yet but a fetch is under way. Show "loading", not "stale". */
+  loading: boolean;
   unavailable: boolean;
   error: string | null;
   windowHours: number;
@@ -127,7 +129,15 @@ export interface ConfigDto {
   upcomingCategories: CategoryId[];
   /** Every upstream we take data from, for the credits line in the footer. */
   sources: Array<{ label: string; url: string }>;
-  airports: Array<{ icao: string; iata: string; name: string; city: string; tracked: boolean }>;
+  airports: Array<{
+    icao: string;
+    iata: string;
+    name: string;
+    city: string;
+    tracked: boolean;
+    /** Not every tracked airport has an Upcoming board; a schedule costs units. */
+    hasSchedule: boolean;
+  }>;
   defaultAirport: string;
   groups: Array<{ id: GroupId; label: string }>;
   categories: CategoryDto[];

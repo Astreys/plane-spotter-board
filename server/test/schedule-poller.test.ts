@@ -123,6 +123,42 @@ describe("SchedulePoller.snapshot", () => {
   });
 });
 
+describe("markRequested", () => {
+  it("records interest so the next heartbeat will fetch", () => {
+    const poller = new SchedulePoller(YYZ, log);
+    const due = (p: SchedulePoller) =>
+      (p as unknown as { fetchDue: (n: number) => boolean }).fetchDue(Date.now());
+
+    expect(due(poller), "nothing wanted yet").toBe(false);
+    poller.markRequested();
+    expect(due(poller), "wanted now").toBe(true);
+  });
+
+  it("does nothing when the schedule is not configured", () => {
+    const poller = new SchedulePoller(YYZ, log);
+    poller.stop();
+    poller.markRequested();
+    expect(poller.snapshot().flights).toEqual([]);
+  });
+});
+
+describe("SchedulePoller loading state", () => {
+  it("reports loading, not out of date, on a first view", () => {
+    const poller = new SchedulePoller(YYZ, log);
+    poller.markRequested();
+
+    const snap = poller.snapshot();
+    expect(snap.updatedAt).toBe(0);
+    expect(snap.unavailable).toBe(true);
+    // The distinction the UI needs: nothing yet is not the same as stale data.
+    expect(snap.loading).toBe(true);
+  });
+
+  it("is not loading when nobody has asked", () => {
+    expect(new SchedulePoller(YYZ, log).snapshot().loading).toBe(false);
+  });
+});
+
 describe("SchedulePoller refresh timing", () => {
   const due = (poller: SchedulePoller, now: number): boolean =>
     (poller as unknown as { fetchDue: (n: number) => boolean }).fetchDue(now);
@@ -134,19 +170,39 @@ describe("SchedulePoller refresh timing", () => {
     });
   };
 
-  it("fetches immediately when there is no cache", () => {
-    expect(due(new SchedulePoller(YYZ, log), Date.now())).toBe(true);
+  /** Fetching is demand-driven, so timing tests have to register interest first. */
+  const wanted = (poller: SchedulePoller, at = Date.now()) => {
+    Object.assign(poller as unknown as Record<string, unknown>, { lastRequestedAt: at });
+    return poller;
+  };
+
+  it("fetches immediately when wanted and there is no cache", () => {
+    expect(due(wanted(new SchedulePoller(YYZ, log)), Date.now())).toBe(true);
+  });
+
+  it("fetches nothing at all until someone asks", () => {
+    // The whole point of lazy: an airport nobody opens costs no units.
+    expect(due(new SchedulePoller(YYZ, log), Date.now())).toBe(false);
+  });
+
+  it("stops refreshing once nobody has looked for a long while", () => {
+    const poller = new SchedulePoller(YYZ, log);
+    const now = Date.now();
+    seed(poller, { fetchedAt: now - 5 * 3_600_000, coversUntil: now + 3_600_000, arrivalTimes: [] });
+    // Last viewed a week ago: let it go quiet rather than spend units forever.
+    wanted(poller, now - 7 * 24 * 3_600_000);
+    expect(due(poller, now)).toBe(false);
   });
 
   it("does not refetch a cache younger than the refresh interval", () => {
-    const poller = new SchedulePoller(YYZ, log);
+    const poller = wanted(new SchedulePoller(YYZ, log));
     const now = Date.now();
     seed(poller, { fetchedAt: now - 60_000, coversUntil: now + 3_600_000, arrivalTimes: [] });
     expect(due(poller, now)).toBe(false);
   });
 
   it("refetches once the cache passes the refresh interval", () => {
-    const poller = new SchedulePoller(YYZ, log);
+    const poller = wanted(new SchedulePoller(YYZ, log));
     const now = Date.now();
     seed(poller, {
       fetchedAt: now - 4 * 3_600_000,
@@ -157,7 +213,7 @@ describe("SchedulePoller refresh timing", () => {
   });
 
   it("refetches on resume when a machine slept through the interval", () => {
-    const poller = new SchedulePoller(YYZ, log);
+    const poller = wanted(new SchedulePoller(YYZ, log));
     const now = Date.now();
     // A whole day passed with no timer firing. Wall clock, not timers, decides.
     seed(poller, {
@@ -169,7 +225,7 @@ describe("SchedulePoller refresh timing", () => {
   });
 
   it("backs off after a failure, and grows the wait", () => {
-    const poller = new SchedulePoller(YYZ, log);
+    const poller = wanted(new SchedulePoller(YYZ, log));
     const now = Date.now();
 
     setFailures(poller, 1, now - 60_000);
@@ -184,7 +240,7 @@ describe("SchedulePoller refresh timing", () => {
   });
 
   it("never backs off beyond the normal refresh interval", () => {
-    const poller = new SchedulePoller(YYZ, log);
+    const poller = wanted(new SchedulePoller(YYZ, log));
     const now = Date.now();
     // The old code capped backoff below the base interval, which made the cap
     // meaningless. Many failures must still retry at least once per interval.
