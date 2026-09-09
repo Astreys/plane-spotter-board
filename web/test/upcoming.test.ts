@@ -13,7 +13,14 @@ const baseConfig: ConfigDto = {
   upcomingCategories: ["DOUBLE_DECK", "QUAD", "WIDEBODY"],
   sources: [],
   airports: [
-    { icao: "CYYZ", iata: "YYZ", name: "Toronto Pearson", city: "Toronto", tracked: true },
+    {
+      icao: "CYYZ",
+      iata: "YYZ",
+      name: "Toronto Pearson",
+      city: "Toronto",
+      tracked: true,
+      hasSchedule: true,
+    },
   ],
   defaultAirport: "CYYZ",
   groups: [{ id: "airframe", label: "Airframe" }],
@@ -38,6 +45,7 @@ const upcoming: UpcomingSnapshot = {
   updatedAt: Date.now(),
   ageSeconds: 30,
   stale: false,
+  loading: false,
   unavailable: false,
   error: null,
   windowHours: 12,
@@ -143,8 +151,13 @@ afterEach(() => {
 });
 
 describe("the Upcoming tab", () => {
-  it("is hidden entirely when the server has no schedule configured", async () => {
-    const wrapper = await mountApp({ ...baseConfig, upcomingEnabled: false });
+  it("is hidden for an airport that has no schedule", async () => {
+    // Tracking an airport live is cheap; a schedule costs units, so not every
+    // airport in the dropdown has an Upcoming board.
+    const wrapper = await mountApp({
+      ...baseConfig,
+      airports: baseConfig.airports.map((a) => ({ ...a, hasSchedule: false })),
+    });
     expect(wrapper.findAll("button.tabs__tab")).toHaveLength(0);
   });
 
@@ -266,6 +279,24 @@ describe("the Upcoming tab", () => {
 
     expect(wrapper.text()).toContain("Nothing big due in the next 12 hours");
     expect(wrapper.text()).toContain("409 arrivals scheduled");
+  });
+
+  it("says it is fetching on a first view, not that it is out of date", async () => {
+    // The server fetches a schedule on demand now, so the first view of an
+    // airport legitimately has nothing yet. That is loading, not staleness.
+    const wrapper = await mountApp(baseConfig, {
+      ...upcoming,
+      loading: true,
+      unavailable: true,
+      updatedAt: 0,
+      ageSeconds: 0,
+      flights: [],
+    });
+    await wrapper.findAll("button.tabs__tab")[1]!.trigger("click");
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Fetching");
+    expect(wrapper.text()).not.toContain("Schedule out of date");
   });
 
   it("surfaces a failed request rather than showing a blank tab", async () => {

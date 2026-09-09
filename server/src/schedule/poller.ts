@@ -5,6 +5,12 @@
  * but the upstream is metered by the month, so the refresh is measured in hours.
  * See the budget note in client.ts.
  *
+ * Fetching is demand-driven. A schedule costs metered units, so an airport that
+ * nobody opens the Upcoming tab for should cost nothing at all - that is what
+ * makes tracking several airports affordable. The route marks demand, the poller
+ * does the fetching, and an airport goes quiet again once nobody has asked for a
+ * while. The request path still never fetches; it only records interest.
+ *
  * It deliberately does NOT sleep on one long setTimeout. A three-hour timer set
  * before a laptop suspends does not fire on time, and a schedule that silently
  * froze for a day is exactly the bug this replaced: the board went on showing an
@@ -27,6 +33,13 @@ const HEARTBEAT_MS = 5 * 60_000;
 /** First retry after a failure. Grows from here, never past the refresh interval. */
 const BASE_RETRY_MS = 10 * 60_000;
 
+/**
+ * How long an airport keeps refreshing after someone last looked at it. Long
+ * enough that a spotter checking back through an afternoon always finds fresh
+ * data, short enough that a one-off glance does not cost units for a week.
+ */
+const DEMAND_WINDOW_MS = 6 * 60 * 60_000;
+
 interface Cached {
   flights: UpcomingFlight[];
   totalScheduled: number;
@@ -42,6 +55,7 @@ export class SchedulePoller {
   private consecutiveFailures = 0;
   private lastError: string | null = null;
   private lastAttemptAt = 0;
+  private lastRequestedAt = 0;
   private timer: NodeJS.Timeout | null = null;
   private stopped = false;
   private inFlight = false;
@@ -58,9 +72,20 @@ export class SchedulePoller {
 
   start(): void {
     if (!this.enabled || this.timer || this.stopped) return;
-    void this.tick();
+    // No fetch on boot. Nothing is spent until someone opens the tab.
     this.timer = setInterval(() => void this.tick(), HEARTBEAT_MS);
     this.timer.unref?.();
+  }
+
+  /**
+   * Someone asked for this schedule. Records the interest and, if a fetch is
+   * already due, starts one in the background - deliberately not awaited, so the
+   * request path never waits on the upstream.
+   */
+  markRequested(): void {
+    if (!this.enabled || this.stopped) return;
+    this.lastRequestedAt = Date.now();
+    if (this.fetchDue(Date.now())) void this.tick();
   }
 
   stop(): void {
@@ -74,6 +99,9 @@ export class SchedulePoller {
    * than waiting out a timer that never ran.
    */
   private fetchDue(now: number): boolean {
+    // Nobody has looked at this airport recently, so it is not worth units.
+    if (now - this.lastRequestedAt > DEMAND_WINDOW_MS) return false;
+
     if (this.consecutiveFailures > 0) {
       const backoff = Math.min(
         BASE_RETRY_MS * 2 ** (this.consecutiveFailures - 1),
@@ -163,11 +191,14 @@ export class SchedulePoller {
     };
 
     if (!this.cache) {
+      // Asked for but nothing back yet: that is loading, not out of date.
+      const loading = this.enabled && (this.inFlight || this.fetchDue(Date.now()));
       return {
         ...base,
         updatedAt: 0,
         ageSeconds: 0,
         stale: true,
+        loading,
         unavailable: true,
         error: this.enabled ? (this.lastError ?? "no schedule yet") : "no API key configured",
         totalScheduled: 0,
@@ -185,6 +216,7 @@ export class SchedulePoller {
       updatedAt: this.cache.fetchedAt,
       ageSeconds: Math.round(ageMs / 1000),
       stale: ageMs > config.scheduleRefreshMs || this.consecutiveFailures > 0,
+      loading: false,
       unavailable: expired,
       error: expired ? (this.lastError ?? "schedule is out of date") : this.lastError,
       totalScheduled: this.cache.totalScheduled,

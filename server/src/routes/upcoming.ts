@@ -15,10 +15,14 @@ export function registerUpcomingRoutes(app: FastifyInstance, registry: PollerReg
     const schedule = registry.getSchedule(request.params.icao);
     if (!schedule) {
       return reply.code(404).send({
-        error: "airport not tracked",
-        tracked: registry.list().map((p) => p.airport.icao),
+        error: "no schedule for this airport",
+        scheduled: registry.scheduleAirports(),
       });
     }
+
+    // Records interest so the poller knows this airport is worth spending units
+    // on. It never fetches here - see the note at the top of schedule/client.ts.
+    schedule.markRequested();
 
     reply.header("Cache-Control", "no-store");
     return schedule.snapshot();

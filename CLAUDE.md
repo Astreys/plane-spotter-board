@@ -29,7 +29,7 @@ with the raw code visible.
 
 ```bash
 npm run dev      # API on :8787, frontend on :5173 with /api proxied
-npm test         # 200 tests, server + web
+npm test         # 207 tests, server + web
 npm run build    # typecheck both, compile server, bundle frontend
 ```
 
@@ -82,6 +82,28 @@ the live board, with far less headroom.
 never starts, `/api/config` reports `upcomingEnabled: false`, and the frontend
 hides the tab. A fresh clone still runs with no signup, which is what the spec
 promised.
+
+## Live board and schedule scale differently
+
+`AIRPORTS` chooses what is polled live; `SCHEDULE_AIRPORTS` chooses which of those
+also get an Upcoming board. They are separate on purpose. The aggregators are
+free and shared across airports, so tracking several live costs nothing extra
+beyond the shared rate gate. A schedule costs metered units per airport, so five
+schedules would need five times the monthly budget.
+
+The frontend follows: `/api/config` reports `hasSchedule` per airport, and the
+Upcoming tab only appears for airports that have one.
+
+## The schedule fetches on demand
+
+`SchedulePoller` does not fetch on boot. The route calls `markRequested()`, the
+poller fetches in the background, and an airport goes quiet again once nobody has
+opened its Upcoming tab for six hours. An airport nobody looks at costs nothing,
+which is what makes adding more of them affordable.
+
+The request path still never fetches - it only records interest. A first view
+returns `loading: true` and the data lands a second or two later; the frontend
+polls briefly to cover that, reading cache each time.
 
 ## The schedule speaks a different language
 

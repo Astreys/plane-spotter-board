@@ -17,7 +17,16 @@ const config: ConfigDto = {
     { label: "Routes by adsbdb.com", url: "https://www.adsbdb.com" },
     { label: "Photos by planespotters.net", url: "https://www.planespotters.net" },
   ],
-  airports: [{ icao: "CYYZ", iata: "YYZ", name: "Toronto Pearson International", city: "Toronto", tracked: true }],
+  airports: [
+    {
+      icao: "CYYZ",
+      iata: "YYZ",
+      name: "Toronto Pearson International",
+      city: "Toronto",
+      tracked: true,
+      hasSchedule: false,
+    },
+  ],
   defaultAirport: "CYYZ",
   groups: [
     { id: "airframe", label: "Airframe" },
