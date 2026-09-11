@@ -58,6 +58,7 @@ server/
   src/domain/inbound.ts          "is it landing here" — the part worth getting right
   src/domain/filters.ts          OR within a group, AND across groups
   src/poller/                    one poller per airport, the only upstream caller
+  src/weather/                   METAR: its client, the code-to-words translation, one poller
   src/routes/                    inbound, SSE stream, config, photos, health
   scripts/inspect.ts             print the board + rejection reasons in a terminal
 web/
@@ -72,6 +73,7 @@ web/
 | `GET /api/airport/:icao/inbound` | Current board as JSON. `?categories=WIDEBODY,FREIGHTER`, `?within=30` |
 | `GET /api/airport/:icao/stream` | Same payload pushed over SSE on every poll |
 | `GET /api/airport/:icao/upcoming` | Todays scheduled big arrivals; empty when no key is set |
+| `GET /api/airport/:icao/weather` | Latest METAR for the field, in plain words; `observation: null` once it is too old to show |
 | `GET /api/config` | Airports, category chips, detection thresholds, attribution |
 | `GET /api/photo/:hex` | Cached planespotters.net lookup; `photo: null` on any miss |
 | `GET /api/health` | Per-poller freshness; 503 until the first snapshot lands |
@@ -128,6 +130,23 @@ rather than dropped.
 
 Times are the operator schedule, not observation. A revision is only marked when
 it actually moves the time.
+
+## Weather
+
+The weather card reads the field's own METAR from
+[aviationweather.gov](https://aviationweather.gov): free, no key, and on by default
+(`WEATHER_ENABLED=false` hides it). One request every ten minutes covers every
+tracked airport, and [`weather/metar.ts`](server/src/weather/metar.ts) turns the
+codes into words - `SCT` into "Partly cloudy", `VCSH` into "Showers nearby".
+
+METAR has no humidity, so it is derived from temperature and dewpoint. The card
+shows the wind's direction, not just its speed, because that decides which runway
+is in use and so which end of the field to stand at.
+
+Stations report hourly, so the card always says how old its report is. Past 90
+minutes it is marked stale; past three hours the card shows nothing rather than
+presenting old weather as current.
+
 ## Where a flight came from
 
 The ADS-B feed carries no route — it knows a callsign, not a city pair. Routes
@@ -166,7 +185,7 @@ visible, so they can be classified later.
 
 ## Attribution and terms
 
-Non-commercial use only. The UI credits the aggregators and planespotters.net,
+Non-commercial use only. The UI credits the aggregators, planespotters.net and aviationweather.gov,
 and the server sends an identifying `User-Agent`. Keep both if you fork this.
 
 Arrival estimates are not a schedule and this is not for navigation.

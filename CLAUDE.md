@@ -149,7 +149,7 @@ family. An unmapped model is reported in `unrecognisedModels` rather than being
 silently dropped.
 ## Upstreams and their gates
 
-Three upstreams, three different services:
+Each upstream is a different service with its own limits:
 
 - **ADS-B aggregators** (adsb.lol / .fi / .one) — the board itself. One shared
   `RateGate` in `server/src/adsb/client.ts`, one request per second across every
@@ -158,6 +158,18 @@ Three upstreams, three different services:
   `server/src/flightroute/client.ts`. Looked up in the background and cached, so
   the poll never waits on it.
 - **planespotters.net** — photos. Cached proxy in `server/src/routes/photos.ts`.
+
+- **aviationweather.gov** - METAR for the weather card. Its own gate in
+  `server/src/weather/client.ts`; one request covers every airport, every ten
+  minutes. `weather/metar.ts` is the one place that turns METAR codes into words,
+  the way `schedule/model-codes.ts` does for aircraft names.
+
+**Weather age comes from the observation, not the fetch.** Stations report hourly,
+so a fetch a minute ago can return a report from fifty minutes ago, and a station
+that stops reporting keeps returning its last one. Past 90 minutes the snapshot is
+`stale` and the card says so; past three hours `observation` is null and the card
+shows no weather rather than old weather as current - the same rule as the
+schedule's.
 
 A new upstream gets its own gate. Sharing the aggregators' gate would starve the
 board to feed a decoration.

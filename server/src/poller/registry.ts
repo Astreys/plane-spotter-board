@@ -2,6 +2,8 @@ import { findAirport, type Airport } from "../config/airports.js";
 import { config } from "../config/env.js";
 import { RouteResolver } from "../flightroute/resolver.js";
 import { SchedulePoller } from "../schedule/poller.js";
+import type { WeatherSnapshot } from "../types.js";
+import { WeatherPoller, type WeatherStats } from "../weather/poller.js";
 import { AirportPoller, type PollerLogger } from "./poller.js";
 
 /**
@@ -14,12 +16,18 @@ export class PollerRegistry {
   private readonly routes: RouteResolver;
   /** Schedule pollers run alongside, on their own much slower timer. */
   private readonly schedules = new Map<string, SchedulePoller>();
+  /**
+   * One weather poller for every airport - METAR answers all stations in a single
+   * request. Null when WEATHER_ENABLED=false.
+   */
+  private readonly weather: WeatherPoller | null;
 
   constructor(
     airports: readonly Airport[],
     private readonly log: PollerLogger,
   ) {
     this.routes = new RouteResolver(log);
+    this.weather = config.weatherEnabled ? new WeatherPoller(airports, log) : null;
     for (const airport of airports) {
       this.pollers.set(airport.icao, new AirportPoller(airport, log, this.routes));
       // A schedule costs metered units per airport, so only the configured
@@ -50,11 +58,22 @@ export class PollerRegistry {
     } else {
       this.log.info("schedule disabled", { reason: "AERODATABOX_API_KEY not set" });
     }
+
+    if (this.weather) {
+      this.weather.start();
+      this.log.info("weather poller started", {
+        airports: [...this.pollers.keys()],
+        refreshMs: config.weatherRefreshMs,
+      });
+    } else {
+      this.log.info("weather disabled", { reason: "WEATHER_ENABLED=false" });
+    }
   }
 
   stop(): void {
     for (const poller of this.pollers.values()) poller.stop();
     for (const schedule of this.schedules.values()) schedule.stop();
+    this.weather?.stop();
     this.routes.stop();
   }
 
@@ -87,6 +106,24 @@ export class PollerRegistry {
   get(code: string): AirportPoller | undefined {
     const key = findAirport(code)?.icao ?? code.trim().toUpperCase();
     return this.pollers.get(key);
+  }
+
+  get weatherEnabled(): boolean {
+    return this.weather !== null;
+  }
+
+  /** Accepts ICAO or IATA. Undefined for an airport that is not tracked. */
+  getWeather(code: string): WeatherSnapshot | undefined {
+    const poller = this.get(code);
+    if (!poller || !this.weather) return undefined;
+    return this.weather.snapshot(poller.airport.icao);
+  }
+
+  /** For the health endpoint. */
+  weatherStats(): WeatherStats {
+    return (
+      this.weather?.stats() ?? { enabled: false, stations: 0, lastFetchAgoSec: null, error: null }
+    );
   }
 
   list(): AirportPoller[] {
