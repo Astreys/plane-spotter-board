@@ -29,7 +29,7 @@ with the raw code visible.
 
 ```bash
 npm run dev      # API on :8787, frontend on :5173 with /api proxied
-npm test         # 207 tests, server + web
+npm test         # 225 tests, server + web
 npm run build    # typecheck both, compile server, bundle frontend
 ```
 
@@ -60,6 +60,37 @@ keep that, the inspect script and the tests both depend on it.
 
 Altitude is compared against **field elevation**, not sea level. It matters at
 high-elevation airports and there is a test for it.
+
+## The layout ladder
+
+The frontend is one responsive shell, not a mobile build and a desktop build.
+Every component is shared; a CSS grid re-flows it. The widths live in
+`--shell-max` / `--shell-gutter` / `--shell-gap` in `web/src/styles/main.css`
+and each breakpoint adds exactly one thing:
+
+| width      | what appears                                  |
+| ---------- | --------------------------------------------- |
+| base       | one column, the phone board                   |
+| `47.5rem`  | wider column, masthead becomes a proper band  |
+| `65rem`    | the card rail, and the board becomes a card   |
+| `80rem`    | the nav rail, which replaces the tab strip    |
+
+Anything that has to line up with the board - the masthead, the footer - reads
+`--shell-max` rather than repeating a number. Hardcoding a width is how the
+masthead stops aligning with the list under it.
+
+**Mobile stays the primary target.** The spec's user is standing at a fence with
+one hand on a camera; desktop is the enhancement layer. Side cards and the nav
+rail are desktop-only for that reason, and anything that costs the mobile list
+vertical space needs a reason.
+
+**This is not an airport's own site.** The footer disclaimer says so and stays
+visible at every width. No airport branding, no airline logos - we have no
+licensed source for airline marks, so `PopularAirlines` uses coloured monograms.
+
+Hero artwork is generated from the ICAO code by `AirportHero.vue` until there is
+real art. Dropping in a real image is one field: set `heroImage` on the airport
+in `server/src/config/airports.ts` and it flows through `/api/config`.
 
 ## Non-goals for v1
 

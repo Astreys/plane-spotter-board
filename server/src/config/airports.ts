@@ -14,6 +14,17 @@ export interface Airport {
   /** Field elevation in feet, used to keep the altitude rules honest. */
   elevationFt: number;
   timeZone: string;
+  /**
+   * The airport's own site, linked from the airport card. Optional: an entry
+   * nobody has filled in renders no link rather than a dead one.
+   */
+  website?: string;
+  /**
+   * Hero artwork under web/public, e.g. "/airports/cyyz.webp". Unset everywhere
+   * for now — the frontend draws a placeholder band from the ICAO code until
+   * there is real artwork, so adding one here is the whole change.
+   */
+  heroImage?: string;
 }
 
 export const AIRPORTS: readonly Airport[] = [
@@ -26,6 +37,7 @@ export const AIRPORTS: readonly Airport[] = [
     lon: -79.6248,
     elevationFt: 569,
     timeZone: "America/Toronto",
+    website: "https://www.torontopearson.com",
   },
   {
     icao: "CYYC",
@@ -36,6 +48,7 @@ export const AIRPORTS: readonly Airport[] = [
     lon: -114.0203,
     elevationFt: 3557,
     timeZone: "America/Edmonton",
+    website: "https://www.yyc.com",
   },
   {
     icao: "CYVR",
@@ -46,6 +59,7 @@ export const AIRPORTS: readonly Airport[] = [
     lon: -123.1844,
     elevationFt: 14,
     timeZone: "America/Vancouver",
+    website: "https://www.yvr.ca",
   },
   {
     icao: "KJFK",
@@ -56,6 +70,7 @@ export const AIRPORTS: readonly Airport[] = [
     lon: -73.7789,
     elevationFt: 13,
     timeZone: "America/New_York",
+    website: "https://www.jfkairport.com",
   },
   {
     icao: "EGLL",
@@ -66,6 +81,7 @@ export const AIRPORTS: readonly Airport[] = [
     lon: -0.4614,
     elevationFt: 83,
     timeZone: "Europe/London",
+    website: "https://www.heathrow.com",
   },
 ];
 

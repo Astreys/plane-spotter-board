@@ -66,8 +66,7 @@ body {
 }
 
 #app {
-  max-width: 640px;
-  margin: 0 auto;
+  width: 100%;
 }
 
 button {
@@ -83,4 +82,70 @@ a:focus-visible {
 
 a {
   color: var(--accent);
+}
+
+/*
+ * The layout ladder.
+ *
+ * One set of components re-flows from a phone column into three columns; there is
+ * no separate desktop build. Each step adds exactly one thing, so a width that
+ * falls between two steps still gets a finished layout rather than a half one:
+ *
+ *   base      one column, the 640px board this started as
+ *   47.5rem   the column widens and the masthead becomes a proper band
+ *   65rem     the card rail appears beside the board
+ *   80rem     the nav rail appears on the other side
+ *
+ * Everything that has to line up with the board - the masthead, the footer -
+ * reads --shell-max rather than repeating the numbers, so the ladder is edited
+ * in one place.
+ */
+:root {
+  --shell-max: 40rem;
+  --shell-gutter: 0.9rem;
+  --shell-gap: 0rem;
+}
+
+@media (min-width: 47.5rem) {
+  :root {
+    --shell-max: 47.5rem;
+  }
+}
+
+@media (min-width: 65rem) {
+  :root {
+    --shell-max: 68rem;
+    --shell-gutter: 1rem;
+    --shell-gap: 1rem;
+  }
+}
+
+@media (min-width: 80rem) {
+  :root {
+    --shell-max: 86rem;
+    --shell-gap: 1.25rem;
+  }
+}
+
+/*
+ * Shared card chrome. Global rather than per-component so a card added later
+ * matches the others without copying six declarations into a scoped block.
+ */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.card--pad {
+  padding: 0.85rem 0.9rem 0.95rem;
+}
+
+.card__heading {
+  margin: 0 0 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
