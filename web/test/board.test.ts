@@ -103,6 +103,7 @@ const snapshot: InboundSnapshot = {
         callsignIata: "EK203",
         airlineIcao: "UAE",
         airlineIata: "EK",
+        source: "callsign",
         arrivesHere: true,
       },
       operator: "Emirates",
@@ -134,6 +135,7 @@ const snapshot: InboundSnapshot = {
         callsignIata: null,
         airlineIcao: "EDV",
         airlineIata: "9E",
+        source: "callsign",
         arrivesHere: false,
       },
       operator: "Endeavor Air",
@@ -375,6 +377,8 @@ describe("the board", () => {
     expect(route.text()).toContain("CLT");
     expect(route.classes()).toContain("row__route--elsewhere");
     expect(route.text()).toContain("scheduled");
+    // The codes stay; the friendly city name does not, because it reads as fact.
+    expect(route.text()).not.toContain("New York");
     expect(route.attributes("title")).toContain("does not end at this airport");
   });
 

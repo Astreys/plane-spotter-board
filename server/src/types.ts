@@ -29,6 +29,12 @@ export interface FlightRoute {
   /** IATA airline code, e.g. "AC". */
   airlineIata: string | null;
   /**
+   * Where the pair came from. "callsign" is adsbdb's canonical city pair for the
+   * flight number, which is often a different leg; "schedule" is today's actual
+   * arrival, taken from the airport's own schedule.
+   */
+  source: "callsign" | "schedule";
+  /**
    * True when the scheduled destination is the airport being watched.
    *
    * Often it is not: the route database keys on callsign and returns a typical

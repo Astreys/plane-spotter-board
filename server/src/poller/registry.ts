@@ -35,7 +35,11 @@ export class PollerRegistry {
     for (const airport of airports) {
       this.pollers.set(
         airport.icao,
-        new AirportPoller(airport, log, this.routes, this.airframes),
+        // The lookup is resolved lazily, so it does not matter that this airport's
+        // schedule poller is created a few lines below.
+        new AirportPoller(airport, log, this.routes, this.airframes, (callsign, hex) =>
+          this.schedules.get(airport.icao)?.originFor(callsign, hex) ?? null,
+        ),
       );
       // A schedule costs metered units per airport, so only the configured
       // subset gets one. The rest are live-board only.

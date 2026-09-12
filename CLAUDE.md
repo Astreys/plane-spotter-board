@@ -29,7 +29,7 @@ with the raw code visible.
 
 ```bash
 npm run dev      # API on :8787, frontend on :5173 with /api proxied
-npm test         # 327 tests, server + web
+npm test         # 340 tests, server + web
 npm run build    # typecheck both, compile server, bundle frontend
 ```
 
@@ -206,6 +206,27 @@ airport being watched, and that is common — the route database stores one
 canonical city pair per callsign. Never render a route as "where this aircraft
 came from" without checking it. `arrivesAt()` in `server/src/domain/route.ts` is
 the single place that decides, and the UI dims and marks the rest.
+
+**The schedule outranks the callsign.** Where an airport has an Upcoming board,
+`SchedulePoller.originFor()` gives today's actual origin by callsign or Mode S
+address, and `withScheduledOrigin()` replaces the canonical pair with it.
+
+**A callsign match alone is not proof.** Light aircraft do transmit airline
+callsigns — a Cessna 172 squawking ACA427 appeared on the board the day this was
+written — so a callsign match is refused when the schedule names a different Mode
+S address for that flight. The address wins, because it identifies the airframe.
+`route.source` says which you are looking at: `"schedule"` is this arrival,
+`"callsign"` is the flight number's usual leg. The index covers **every**
+scheduled arrival, not just the big ones the board lists — correcting a
+narrowbody matters just as much, and it is the same response, already paid for.
+
+The case that prompted it: adsbdb returns Montréal → New York for ACA744, which
+that day flew San Francisco → Toronto.
+
+**Only a route that ends here may show a city name.** A pair we cannot vouch for
+keeps its dimmed codes and its `SCHEDULED` mark but loses the friendly name —
+"Montréal" reads as a fact in a way "YUL" does not. Airports with no schedule
+key, and aircraft outside the schedule window, stay in that quieter mode.
 
 ## Schedule refresh uses a heartbeat, not a long timer
 

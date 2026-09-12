@@ -25,7 +25,7 @@ import { config } from "../config/env.js";
 import type { PollerLogger } from "../poller/poller.js";
 import type { UpcomingFlight, UpcomingSnapshot } from "../types.js";
 import { fetchArrivals } from "./client.js";
-import { selectUpcoming } from "./normalize.js";
+import { callsignKey, hexKey, selectUpcoming, type ScheduledOrigin } from "./normalize.js";
 
 /** How often to ask whether a fetch is due. Not how often we fetch. */
 const HEARTBEAT_MS = 5 * 60_000;
@@ -40,8 +40,16 @@ const BASE_RETRY_MS = 10 * 60_000;
  */
 const DEMAND_WINDOW_MS = 6 * 60 * 60_000;
 
+/** What the live board asks this poller for, without knowing it is a poller. */
+export type ScheduleOriginLookup = (
+  callsign: string | null,
+  hex: string | null,
+) => ScheduledOrigin | null;
+
 interface Cached {
   flights: UpcomingFlight[];
+  /** Today's origin for every arrival in the window, big or not. */
+  origins: Map<string, ScheduledOrigin>;
   totalScheduled: number;
   unrecognisedModels: string[];
   fetchedAt: number;
@@ -148,6 +156,7 @@ export class SchedulePoller {
       const selected = selectUpcoming(result.arrivals);
       this.cache = {
         flights: selected.flights,
+        origins: selected.origins,
         totalScheduled: selected.totalScheduled,
         unrecognisedModels: selected.unrecognisedModels,
         fetchedAt: Date.now(),
@@ -166,6 +175,37 @@ export class SchedulePoller {
     } finally {
       this.inFlight = false;
     }
+  }
+
+  /**
+   * Today's actual origin for a flight, when the schedule knows it.
+   *
+   * The Mode S address is tried first: it identifies the airframe itself, so it
+   * survives a callsign the feed reports slightly differently. Returns null once
+   * the cached window no longer reaches the present - stale origins would be
+   * exactly the wrong answer, since the whole point is that yesterday's leg is
+   * not today's.
+   */
+  originFor(callsign: string | null, hex: string | null): ScheduledOrigin | null {
+    const cache = this.cache;
+    if (!cache || Date.now() >= cache.coversUntil) return null;
+
+    const byHex = hex ? cache.origins.get(hexKey(hex)) : undefined;
+    if (byHex) return byHex;
+
+    const byCallsign = callsign ? cache.origins.get(callsignKey(callsign)) : undefined;
+    if (!byCallsign) return null;
+
+    /*
+     * A callsign match on its own is not proof of anything. Light aircraft turn up
+     * transmitting an airline's callsign — a Cessna 172 squawking ACA427 appeared
+     * on the board while this was being written, and without this it would have
+     * inherited the real AC427's origin. When the schedule names a different
+     * airframe for that flight, believe the airframe.
+     */
+    const ours = hex?.trim().toLowerCase();
+    if (byCallsign.hex && ours && byCallsign.hex !== ours) return null;
+    return byCallsign;
   }
 
   /**

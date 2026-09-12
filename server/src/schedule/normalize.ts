@@ -48,6 +48,58 @@ export function toIso(value: string | undefined): string | null {
   return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
 }
 
+/**
+ * Where an arrival is actually coming from today.
+ *
+ * Kept for *every* scheduled arrival, not just the big ones the board lists,
+ * because its value is correcting the live board - and the aircraft that most
+ * needs correcting is as likely to be a narrowbody as a widebody. It costs
+ * nothing extra: this is the same response, already fetched and paid for.
+ */
+export interface ScheduledOrigin {
+  iata: string | null;
+  icao: string | null;
+  name: string | null;
+  /** The commercial number, e.g. "AC 744", so a row can say where this came from. */
+  number: string | null;
+  /**
+   * The Mode S address the schedule expects to be flying it, when it says. Used to
+   * refuse a callsign match that names a different airframe.
+   */
+  hex: string | null;
+}
+
+/** Callsign and Mode S keys are namespaced so the two can share one map. */
+export const callsignKey = (callsign: string): string => "CS:" + callsign.trim().toUpperCase();
+export const hexKey = (hex: string): string => "HEX:" + hex.trim().toLowerCase();
+
+function indexOrigins(raw: RawScheduledFlight[]): Map<string, ScheduledOrigin> {
+  const origins = new Map<string, ScheduledOrigin>();
+
+  for (const flight of raw) {
+    const airport = flight.departure?.airport;
+    const iata = text(airport?.iata)?.toUpperCase() ?? null;
+    const icao = text(airport?.icao)?.toUpperCase() ?? null;
+    // Without a code there is nothing worth putting on a row.
+    if (!iata && !icao) continue;
+
+    const callsign = text(flight.callSign);
+    const hex = text(flight.aircraft?.modeS)?.toLowerCase() ?? null;
+
+    const origin: ScheduledOrigin = {
+      iata,
+      icao,
+      name: text(airport?.name),
+      number: text(flight.number),
+      hex,
+    };
+    if (callsign) origins.set(callsignKey(callsign), origin);
+    if (hex) origins.set(hexKey(hex), origin);
+  }
+
+  return origins;
+}
+
 export function normalizeFlight(flight: RawScheduledFlight): UpcomingFlight | null {
   const { iso, revised } = bestArrivalTime(flight);
   // Without an arrival time there is no row to place on a timeline.
@@ -96,6 +148,8 @@ export function isBigAircraft(flight: UpcomingFlight): boolean {
 
 export interface NormalizeResult {
   flights: UpcomingFlight[];
+  /** Today's origin for every scheduled arrival, keyed by callsign and by hex. */
+  origins: Map<string, ScheduledOrigin>;
   /** Everything the window held, before the airframe filter. */
   totalScheduled: number;
   /** Had a model we could not turn into a designator - worth knowing about. */
@@ -133,6 +187,7 @@ export function selectUpcoming(
 
   return {
     flights,
+    origins: indexOrigins(raw ?? []),
     totalScheduled: raw?.length ?? 0,
     unrecognisedModels: [...unrecognised].sort(),
   };
