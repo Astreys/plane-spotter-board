@@ -184,6 +184,11 @@ export interface ConfigDto {
     iata: string;
     name: string;
     city: string;
+    timeZone: string;
+    /** The airport's own site, for the airport card. Null when unknown. */
+    website: string | null;
+    /** Hero artwork path, or null while the frontend draws its own placeholder. */
+    heroImage: string | null;
     tracked: boolean;
     /** Whether this airport has an Upcoming board. Not every tracked one does. */
     hasSchedule: boolean;
