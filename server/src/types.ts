@@ -164,6 +164,76 @@ export interface InboundSnapshot {
   counts: Record<string, number>;
 }
 
+/** The icon the weather card draws. Chosen here, so the frontend ships no METAR knowledge. */
+export type WeatherIcon =
+  | "clear"
+  | "mostly-clear"
+  | "partly-cloudy"
+  | "mostly-cloudy"
+  | "overcast"
+  | "showers"
+  | "rain"
+  | "snow"
+  | "thunder"
+  | "fog"
+  | "haze";
+
+/** Cloud cover in METAR's own words. OVX is a sky obscured, usually by fog. */
+export type CloudCover = "FEW" | "SCT" | "BKN" | "OVC" | "OVX";
+
+/** One airfield observation, already translated out of METAR. */
+export interface WeatherObservation {
+  /** When the station observed it, ISO 8601 UTC. Age is counted from here, not from our fetch. */
+  observedAt: string;
+  temperatureC: number | null;
+  dewpointC: number | null;
+  /** Derived from temperature and dewpoint; METAR does not report it. */
+  humidityPct: number | null;
+  /** Null when the station reported no wind at all. */
+  wind: {
+    /** Degrees true the wind blows from. Null when variable or calm. */
+    directionDeg: number | null;
+    /** 16-point label for directionDeg, e.g. "NW". */
+    fromCompass: string | null;
+    speedKt: number;
+    /** Only when it gusts above the mean wind. */
+    gustKt: number | null;
+    variable: boolean;
+    calm: boolean;
+  } | null;
+  visibilityKm: number | null;
+  /** The station reported a floor ("10+"), so the value means "at least this". */
+  visibilityOrMore: boolean;
+  /**
+   * The ceiling - lowest broken or overcast layer - or, with no ceiling, the lowest
+   * layer of any kind. Null for a clear or unreported sky.
+   */
+  cloudBase: { cover: CloudCover; baseFt: number } | null;
+  /** Plain words: "Partly cloudy", "Light rain showers", "Showers nearby". */
+  condition: string;
+  icon: WeatherIcon;
+  /** Whether the sun is up at the airport now, for a sun or a moon. */
+  isDay: boolean;
+  /** The METAR as issued, for anyone who reads the code. */
+  raw: string;
+}
+
+/** The payload behind /api/airport/:icao/weather. */
+export interface WeatherSnapshot {
+  airport: { icao: string; iata: string };
+  /** Null before the first report, and once the latest is too old to show as current. */
+  observation: WeatherObservation | null;
+  /** Age of the observation itself, seconds. Null when there is none. */
+  ageSeconds: number | null;
+  /** An hourly report has been missed, or the last refresh failed. Shown, but marked. */
+  stale: boolean;
+  /** Nothing fetched yet, but a fetch is due. The card says "loading", not "unavailable". */
+  loading: boolean;
+  /** Nothing usable to show. */
+  unavailable: boolean;
+  error: string | null;
+}
+
 export interface CategoryDto {
   id: CategoryId;
   group: GroupId;
@@ -177,6 +247,8 @@ export interface ConfigDto {
   upcomingEnabled: boolean;
   /** Airframe categories the Upcoming board is limited to. */
   upcomingCategories: CategoryId[];
+  /** Whether the weather card has a source. False hides the strip and the card. */
+  weatherEnabled: boolean;
   /** Every upstream we take data from, for the credits line in the footer. */
   sources: Array<{ label: string; url: string }>;
   airports: Array<{

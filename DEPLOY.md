@@ -93,6 +93,8 @@ See `.env.example`. The ones that matter in production:
 | `USER_AGENT` | app + repo URL | The aggregators ask for a real one. Keep it honest |
 | `CORS_ORIGINS` | empty (allow all) | Set this in production |
 | `AERODATABOX_API_KEY` | empty | Optional. Enables the Upcoming board. Server-side only — never put it in the Netlify build |
+| `WEATHER_ENABLED` | `true` | METAR weather card from aviationweather.gov. No key needed; `false` hides it |
+| `WEATHER_REFRESH_MS` | `600000` | Floored at 5 minutes. Stations only report hourly |
 | `SERVE_STATIC` | `false` | `true` to serve `web/dist` from the API |
 
 ## Frontend build variables

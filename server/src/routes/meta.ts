@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { ATTRIBUTION } from "../adsb/client.js";
 import { ROUTE_ATTRIBUTION } from "../flightroute/client.js";
+import { WEATHER_ATTRIBUTION } from "../weather/client.js";
 import { BIG_CATEGORIES } from "../schedule/normalize.js";
 import { AIRPORTS } from "../config/airports.js";
 import { CATEGORIES, CATEGORY_GROUPS } from "../config/aircraft-types.js";
@@ -47,10 +48,15 @@ export function registerMetaRoutes(app: FastifyInstance, registry: PollerRegistr
       attribution: ATTRIBUTION,
       upcomingEnabled: registry.scheduleEnabled,
       upcomingCategories: [...BIG_CATEGORIES],
+      weatherEnabled: registry.weatherEnabled,
       sources: [
         { label: ATTRIBUTION.label, url: ATTRIBUTION.url },
         { label: ROUTE_ATTRIBUTION.label, url: ROUTE_ATTRIBUTION.url },
         { label: "Photos by planespotters.net", url: "https://www.planespotters.net" },
+        // Credited only when it is actually on screen.
+        ...(registry.weatherEnabled
+          ? [{ label: WEATHER_ATTRIBUTION.label, url: WEATHER_ATTRIBUTION.url }]
+          : []),
       ],
       pollIntervalMs: config.pollIntervalMs,
     };
@@ -75,6 +81,7 @@ export function registerMetaRoutes(app: FastifyInstance, registry: PollerRegistr
       uptimeSec: Math.round(process.uptime()),
       scheduleEnabled: registry.scheduleEnabled,
       routes: registry.routeStats(),
+      weather: registry.weatherStats(),
       pollers,
     });
   });
