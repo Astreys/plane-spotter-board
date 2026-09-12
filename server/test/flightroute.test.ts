@@ -54,6 +54,8 @@ describe("fetchRoute", () => {
     expect(result.route.origin).toMatchObject({ iata: "YYZ", icao: "CYYZ", city: "Toronto" });
     expect(result.route.destination).toMatchObject({ iata: "YVR", city: "Vancouver" });
     expect(result.route.airline).toBe("WestJet");
+    expect(result.route.airlineIcao).toBe("WJA");
+    expect(result.route.airlineIata).toBe("WS");
     expect(result.route.callsignIata).toBe("WS709");
     // Only the poller knows the airport, so the client never claims this.
     expect(result.route.arrivesHere).toBe(false);
@@ -106,6 +108,8 @@ describe("RouteResolver", () => {
     destination: { iata: "YVR", icao: "CYVR", name: null, city: "Vancouver", countryIso: "CA" },
     airline: "WestJet",
     callsignIata: "WS709",
+    airlineIcao: "WJA",
+    airlineIata: "WS",
     arrivesHere: false,
   };
 

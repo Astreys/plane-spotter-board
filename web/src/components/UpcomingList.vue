@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { fetchUpcoming, type UpcomingFlight, type UpcomingSnapshot } from "../api";
+import { hueFor } from "../airlines";
+import { minutesUntil, originOf, statusLabel, statusTone } from "../upcoming";
+import AirlineMark from "./AirlineMark.vue";
 
 const props = defineProps<{ icao: string; timeZone: string | null }>();
 
@@ -73,10 +76,6 @@ const agoText = computed(() => {
   return Math.round(hours / 24) + " days ago";
 });
 
-function minutesAway(iso: string): number {
-  return Math.round((new Date(iso).getTime() - Date.now()) / 60000);
-}
-
 /** Group by local day so an overnight window does not read as one long list. */
 const groups = computed(() => {
   const flights = snapshot.value?.flights ?? [];
@@ -101,8 +100,20 @@ const BADGES: Record<string, string> = {
 
 const badgesFor = (flight: UpcomingFlight): string[] =>
   flight.categories.filter((id) => id in BADGES);
+
+const keyOf = (flight: UpcomingFlight): string =>
+  (flight.number ?? flight.callsign ?? "?") + flight.arrivalTime;
+
+/** The mark's colour follows the airline code when there is one, like the card. */
+const markHue = (flight: UpcomingFlight): number =>
+  hueFor(flight.airlineIcao ?? flight.airline?.toLowerCase() ?? "");
 </script>
 
+<!--
+  One table, not a table on desktop and a list on mobile: the same rows restack
+  through CSS at narrow widths. Two markups would mean two things to keep correct,
+  and a screen reader would read whichever one happened to be in the DOM.
+-->
 <template>
   <div class="upcoming">
     <p v-if="(loading && !snapshot) || snapshot?.loading" class="upcoming__note">
@@ -140,43 +151,85 @@ const badgesFor = (flight: UpcomingFlight): string[] =>
         Last refreshed {{ agoText }} - this may be out of date.
       </p>
 
-      <div v-for="group in groups" :key="group.label" class="upcoming__day">
-        <h2 class="upcoming__daylabel">{{ group.label }}</h2>
-        <ul class="upcoming__list">
-          <li v-for="flight in group.flights" :key="(flight.number ?? flight.callsign) + flight.arrivalTime" class="flight">
-            <div class="flight__time">
+      <table class="fids">
+        <thead class="fids__head">
+          <tr>
+            <th scope="col" class="fids__th fids__th--time">Arrives</th>
+            <th scope="col" class="fids__th">Aircraft</th>
+            <th scope="col" class="fids__th fids__th--from">From</th>
+            <th scope="col" class="fids__th fids__th--airline">Airline</th>
+            <th scope="col" class="fids__th fids__th--status">Status</th>
+          </tr>
+        </thead>
+
+        <tbody v-for="group in groups" :key="group.label" class="fids__day">
+          <tr class="fids__daylabel">
+            <th scope="colgroup" colspan="5">{{ group.label }}</th>
+          </tr>
+
+          <tr v-for="flight in group.flights" :key="keyOf(flight)" class="flight">
+            <td class="flight__time">
               <span class="flight__clock">{{ clock(flight.arrivalTime) }}</span>
               <span v-if="flight.arrivalIsRevised" class="flight__revised">revised</span>
-              <span v-else-if="minutesAway(flight.arrivalTime) < 90" class="flight__in">
-                in {{ minutesAway(flight.arrivalTime) }}m
+              <span v-else-if="minutesUntil(flight.arrivalTime) < 90" class="flight__in">
+                in {{ minutesUntil(flight.arrivalTime) }}m
               </span>
-            </div>
+            </td>
 
-            <div class="flight__body">
+            <td class="flight__aircraft">
               <div class="flight__top">
-                <span class="flight__name">{{ flight.typeName ?? flight.model ?? "Unknown type" }}</span>
-                <span v-for="badge in badgesFor(flight)" :key="badge" class="flight__badge" :data-badge="badge">
+                <span class="flight__name">
+                  {{ flight.typeName ?? flight.model ?? "Unknown type" }}
+                </span>
+                <span
+                  v-for="badge in badgesFor(flight)"
+                  :key="badge"
+                  class="flight__badge"
+                  :data-badge="badge"
+                >
                   {{ BADGES[badge] }}
                 </span>
               </div>
               <div class="flight__meta">
                 <span v-if="flight.type" class="flight__code">{{ flight.type }}</span>
                 <span v-if="flight.number">{{ flight.number }}</span>
-                <span v-if="flight.origin" class="flight__origin">
-                  from {{ flight.origin.iata ?? flight.origin.icao }}
-                  <template v-if="flight.origin.name">· {{ flight.origin.name }}</template>
+                <span v-if="flight.registration" class="flight__code">
+                  {{ flight.registration }}
                 </span>
+                <span v-if="flight.terminal" class="flight__terminal">T{{ flight.terminal }}</span>
               </div>
-              <div class="flight__meta flight__meta--dim">
-                <span v-if="flight.airline">{{ flight.airline }}</span>
-                <span v-if="flight.registration">{{ flight.registration }}</span>
-                <span v-if="flight.terminal">T{{ flight.terminal }}</span>
-                <span v-if="flight.status">{{ flight.status }}</span>
-              </div>
-            </div>
-          </li>
-        </ul>
-      </div>
+            </td>
+
+            <td class="flight__from">
+              <template v-if="originOf(flight.origin)">
+                <span class="flight__city">{{ originOf(flight.origin)!.name }}</span>
+                <span v-if="originOf(flight.origin)!.code" class="flight__code">
+                  {{ originOf(flight.origin)!.code }}
+                </span>
+              </template>
+            </td>
+
+            <td class="flight__airline">
+              <template v-if="flight.airline">
+                <AirlineMark
+                  class="flight__mark"
+                  :style="{ '--mark-hue': markHue(flight) }"
+                  :name="flight.airline"
+                  :code="flight.airlineIcao ?? flight.airlineIata"
+                  :size="24"
+                />
+                <span class="flight__airline-name">{{ flight.airline }}</span>
+              </template>
+            </td>
+
+            <td class="flight__status">
+              <span v-if="flight.status" class="pill" :data-tone="statusTone(flight.status)">
+                {{ statusLabel(flight.status) }}
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
 
       <p class="upcoming__footnote">
         {{ snapshot.flights.length }} of {{ snapshot.totalScheduled }} scheduled arrivals in the
@@ -234,9 +287,31 @@ const badgesFor = (flight: UpcomingFlight): string[] =>
   border-bottom: 1px solid var(--line);
 }
 
-.upcoming__daylabel {
-  margin: 0;
+.fids {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+/* The column headings only earn their space once the row is actually a row. */
+.fids__head {
+  display: none;
+}
+
+.fids__th {
+  padding: 0.5rem 0.6rem;
+  text-align: left;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+}
+
+.fids__daylabel th {
   padding: 0.5rem 0.9rem 0.35rem;
+  text-align: left;
   font-size: 0.68rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -244,30 +319,24 @@ const badgesFor = (flight: UpcomingFlight): string[] =>
   color: var(--muted);
   background: var(--surface);
   border-bottom: 1px solid var(--line);
-}
-
-.upcoming__list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+  border-top: 1px solid var(--line);
 }
 
 .flight {
-  display: flex;
-  gap: 0.7rem;
-  padding: 0.6rem 0.9rem;
   border-bottom: 1px solid var(--line);
 }
 
+.flight td {
+  padding: 0.55rem 0.6rem;
+  vertical-align: top;
+}
+
 .flight__time {
-  flex: 0 0 auto;
-  width: 3.6rem;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  white-space: nowrap;
 }
 
 .flight__clock {
+  display: block;
   font-family: var(--mono);
   font-size: 1.05rem;
   font-weight: 650;
@@ -277,6 +346,7 @@ const badgesFor = (flight: UpcomingFlight): string[] =>
 
 .flight__revised,
 .flight__in {
+  display: block;
   font-size: 0.6rem;
   text-transform: uppercase;
   letter-spacing: 0.07em;
@@ -286,11 +356,6 @@ const badgesFor = (flight: UpcomingFlight): string[] =>
 
 .flight__revised {
   color: var(--warn);
-}
-
-.flight__body {
-  min-width: 0;
-  flex: 1 1 auto;
 }
 
 .flight__top {
@@ -326,13 +391,8 @@ const badgesFor = (flight: UpcomingFlight): string[] =>
   flex-wrap: wrap;
   gap: 0.15rem 0.5rem;
   margin-top: 0.15rem;
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   color: var(--muted);
-}
-
-.flight__meta--dim {
-  color: var(--muted-2);
-  font-size: 0.7rem;
 }
 
 .flight__code {
@@ -341,11 +401,56 @@ const badgesFor = (flight: UpcomingFlight): string[] =>
   color: var(--muted-2);
 }
 
-.flight__origin {
+.flight__city {
+  display: block;
+}
+
+.flight__from .flight__code {
+  font-size: 0.72rem;
+}
+
+.flight__airline {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+}
+
+.flight__mark {
+  display: inline-grid;
+  vertical-align: middle;
+  margin-right: 0.4rem;
+}
+
+.flight__airline-name {
+  vertical-align: middle;
+}
+
+.pill {
+  display: inline-block;
+  padding: 0.12rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 550;
   white-space: nowrap;
+  background: var(--surface-2);
+  color: var(--muted);
+  border: 1px solid transparent;
+}
+
+.pill[data-tone="expected"] {
+  background: color-mix(in srgb, var(--good) 16%, transparent);
+  border-color: color-mix(in srgb, var(--good) 34%, transparent);
+  color: var(--good);
+}
+
+.pill[data-tone="delayed"] {
+  background: color-mix(in srgb, var(--warn) 16%, transparent);
+  border-color: color-mix(in srgb, var(--warn) 34%, transparent);
+  color: var(--warn);
+}
+
+.pill[data-tone="cancelled"] {
+  background: color-mix(in srgb, var(--bad) 16%, transparent);
+  border-color: color-mix(in srgb, var(--bad) 34%, transparent);
+  color: var(--bad);
 }
 
 .upcoming__footnote {
@@ -354,5 +459,91 @@ const badgesFor = (flight: UpcomingFlight): string[] =>
   font-size: 0.7rem;
   line-height: 1.6;
   color: var(--muted-2);
+}
+
+/*
+ * Narrow: the row restacks into the shape the phone board already uses - time on
+ * the left, everything else beside it - rather than scrolling a table sideways.
+ */
+@media (max-width: 47.4375rem) {
+  .flight {
+    display: grid;
+    grid-template-columns: 3.6rem minmax(0, 1fr);
+    padding: 0.6rem 0.9rem;
+  }
+
+  .flight td {
+    padding: 0;
+  }
+
+  .flight__time {
+    grid-row: 1 / span 3;
+  }
+
+  .flight__from,
+  .flight__airline,
+  .flight__status {
+    margin-top: 0.15rem;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+
+  .flight__city {
+    display: inline;
+  }
+
+  .flight__city::before {
+    content: "from ";
+    color: var(--muted-2);
+  }
+
+  .flight__from .flight__code {
+    margin-left: 0.3rem;
+  }
+
+  .flight__status {
+    margin-top: 0.3rem;
+  }
+}
+
+/* Wide enough for real columns: bring the headings back. */
+@media (min-width: 47.5rem) {
+  .fids__head {
+    display: table-header-group;
+  }
+
+  /*
+   * Give the last three columns their own width, or the aircraft column absorbs
+   * every spare pixel and leaves a gully between the type and where it is from.
+   */
+  .fids__th--time {
+    width: 5.5rem;
+  }
+
+  .fids__th--from {
+    width: 22%;
+  }
+
+  .fids__th--airline {
+    width: 22%;
+  }
+
+  .fids__th--status {
+    width: 7.5rem;
+  }
+
+  .flight td {
+    padding: 0.6rem;
+  }
+
+  .fids__th--time,
+  .flight__time {
+    padding-left: 0.9rem;
+  }
+
+  .fids__th--status,
+  .flight__status {
+    padding-right: 0.9rem;
+  }
 }
 </style>

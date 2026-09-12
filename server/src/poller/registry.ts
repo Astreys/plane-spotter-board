@@ -1,5 +1,6 @@
 import { findAirport, type Airport } from "../config/airports.js";
 import { config } from "../config/env.js";
+import { AircraftResolver } from "../flightroute/aircraft.js";
 import { RouteResolver } from "../flightroute/resolver.js";
 import { SchedulePoller } from "../schedule/poller.js";
 import type { WeatherSnapshot } from "../types.js";
@@ -14,6 +15,8 @@ export class PollerRegistry {
   private readonly pollers = new Map<string, AirportPoller>();
   /** One shared cache across airports — a callsign flies one route wherever it lands. */
   private readonly routes: RouteResolver;
+  /** Likewise for airframes: an aircraft is the same aircraft at every airport. */
+  private readonly airframes: AircraftResolver;
   /** Schedule pollers run alongside, on their own much slower timer. */
   private readonly schedules = new Map<string, SchedulePoller>();
   /**
@@ -27,9 +30,13 @@ export class PollerRegistry {
     private readonly log: PollerLogger,
   ) {
     this.routes = new RouteResolver(log);
+    this.airframes = new AircraftResolver(log);
     this.weather = config.weatherEnabled ? new WeatherPoller(airports, log) : null;
     for (const airport of airports) {
-      this.pollers.set(airport.icao, new AirportPoller(airport, log, this.routes));
+      this.pollers.set(
+        airport.icao,
+        new AirportPoller(airport, log, this.routes, this.airframes),
+      );
       // A schedule costs metered units per airport, so only the configured
       // subset gets one. The rest are live-board only.
       if (config.scheduleAirports.includes(airport.icao)) {
@@ -75,11 +82,17 @@ export class PollerRegistry {
     for (const schedule of this.schedules.values()) schedule.stop();
     this.weather?.stop();
     this.routes.stop();
+    this.airframes.stop();
   }
 
   /** Route cache size and backlog, for the health endpoint. */
   routeStats(): { cached: number; queued: number } {
     return this.routes.stats();
+  }
+
+  /** Airframe cache size and backlog, for the health endpoint. */
+  aircraftStats(): { cached: number; queued: number } {
+    return this.airframes.stats();
   }
 
   /** Accepts ICAO or IATA, like get(). */

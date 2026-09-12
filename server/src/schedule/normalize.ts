@@ -61,6 +61,8 @@ export function normalizeFlight(flight: RawScheduledFlight): UpcomingFlight | nu
     number: text(flight.number),
     callsign: text(flight.callSign)?.toUpperCase() ?? null,
     airline: text(flight.airline?.name),
+    airlineIcao: text(flight.airline?.icao)?.toUpperCase() ?? null,
+    airlineIata: text(flight.airline?.iata)?.toUpperCase() ?? null,
     status: text(flight.status),
     isCargo: flight.isCargo === true,
 

@@ -24,7 +24,7 @@ First data lands within a poll interval (15s). `npm run dev:server` and
 `npm run dev:web` run the halves separately.
 
 ```bash
-npm test        # 293 tests across server and web
+npm test        # 327 tests across server and web
 npm run build   # typecheck both, compile the server, bundle the frontend
 ```
 
@@ -169,6 +169,23 @@ is not the airport being watched, the row dims the route and marks it
 `SCHEDULED`. `arrivesAt()` in
 [`server/src/domain/route.ts`](server/src/domain/route.ts) is the one place that
 decides this, and it is unit tested.
+
+### What the airframe adds
+
+adsbdb also knows the airframe behind a Mode S address, and
+[`flightroute/aircraft.ts`](server/src/flightroute/aircraft.ts) caches that the
+same way: same service, same gate, same rule that a poll never waits on it.
+
+It fills two gaps. The feed often omits the type code, and a row without one sat
+in `OTHER` reading "Unknown type" even when it was a widebody — with a type from
+adsbdb it classifies through the same taxonomy as everything else. And it names
+the registered operator, so an aircraft whose callsign never resolves, which is
+most general aviation, still says who is flying it.
+
+Airline logos are trademarks with no licensed source available to a project like
+this, so an airline is shown as a coloured monogram. `AirlineMark.vue` is the one
+component that decides that, and it already accepts a logo URL, so a licensed
+source would be a one-component change.
 
 ## Filters
 
