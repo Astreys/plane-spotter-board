@@ -10,6 +10,7 @@ import { registerMetaRoutes } from "./routes/meta.js";
 import { registerPhotoRoutes } from "./routes/photos.js";
 import { registerStreamRoutes } from "./routes/stream.js";
 import { registerUpcomingRoutes } from "./routes/upcoming.js";
+import { registerWeatherRoutes } from "./routes/weather.js";
 
 export interface App {
   app: FastifyInstance;
@@ -43,6 +44,7 @@ export async function buildApp(): Promise<App> {
   registerInboundRoutes(app, registry);
   registerStreamRoutes(app, registry);
   registerUpcomingRoutes(app, registry);
+  registerWeatherRoutes(app, registry);
   registerPhotoRoutes(app);
 
   if (config.serveStatic) {

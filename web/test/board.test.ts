@@ -1,7 +1,7 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "../src/App.vue";
-import type { ConfigDto, InboundSnapshot } from "../src/api";
+import type { ConfigDto, InboundSnapshot, WeatherSnapshot } from "../src/api";
 
 /**
  * A render smoke test against stubbed data: does the board actually paint rows,
@@ -11,6 +11,7 @@ import type { ConfigDto, InboundSnapshot } from "../src/api";
 
 const config: ConfigDto = {
   upcomingEnabled: false,
+  weatherEnabled: true,
   upcomingCategories: ["DOUBLE_DECK", "QUAD", "WIDEBODY"],
   sources: [
     { label: "ADS-B data by adsb.lol", url: "https://adsb.lol" },
@@ -23,6 +24,9 @@ const config: ConfigDto = {
       iata: "YYZ",
       name: "Toronto Pearson International",
       city: "Toronto",
+      timeZone: "America/Toronto",
+      website: "https://www.torontopearson.com",
+      heroImage: null,
       tracked: true,
       hasSchedule: false,
     },
@@ -159,12 +163,45 @@ class FakeEventSource {
   }
 }
 
+/** A fresh report, shaped like /api/airport/:icao/weather. Tests swap it before mounting. */
+function freshWeather(): WeatherSnapshot {
+  return {
+    airport: { icao: "CYYZ", iata: "YYZ" },
+    observation: {
+      observedAt: new Date(Date.now() - 19 * 60_000).toISOString(),
+      temperatureC: 16,
+      dewpointC: 10,
+      humidityPct: 68,
+      wind: { directionDeg: 300, fromCompass: "WNW", speedKt: 6, gustKt: null, variable: false, calm: false },
+      visibilityKm: 24.1,
+      visibilityOrMore: false,
+      cloudBase: { cover: "BKN", baseFt: 1400 },
+      condition: "Mostly cloudy",
+      icon: "mostly-cloudy",
+      isDay: true,
+      raw: "METAR CYYZ 111300Z 30006KT 15SM BKN014 16/10 A3005",
+    },
+    ageSeconds: 19 * 60,
+    stale: false,
+    loading: false,
+    unavailable: false,
+    error: null,
+  };
+}
+
+let weather: WeatherSnapshot = freshWeather();
+
 function stubFetch(): void {
   vi.stubGlobal(
     "fetch",
     vi.fn(async (input: string) => {
       if (String(input).includes("/api/config")) {
         return new Response(JSON.stringify(config), {
+          headers: { "content-type": "application/json" },
+        });
+      }
+      if (String(input).includes("/weather")) {
+        return new Response(JSON.stringify(weather), {
           headers: { "content-type": "application/json" },
         });
       }
@@ -188,6 +225,7 @@ async function mountBoard() {
 
 beforeEach(() => {
   FakeEventSource.instances = [];
+  weather = freshWeather();
   vi.stubGlobal("EventSource", FakeEventSource);
   vi.stubGlobal("IntersectionObserver", undefined);
   stubFetch();
@@ -195,6 +233,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  config.weatherEnabled = true;
 });
 
 describe("the board", () => {
@@ -341,5 +380,69 @@ describe("the board", () => {
 
     expect(wrapper.findAll("li.row")).toHaveLength(1);
     expect(wrapper.find(".row__route").exists()).toBe(false);
+  });
+});
+
+describe("the weather", () => {
+  it("shows the card with wind direction, humidity, visibility and cloud base", async () => {
+    const { wrapper } = await mountBoard();
+    const card = wrapper.find(".weather");
+
+    expect(card.text()).toContain("16°C");
+    expect(card.text()).toContain("Mostly cloudy");
+    expect(card.text()).toContain("WNW 6 kt");
+    expect(card.text()).toContain("68%");
+    expect(card.text()).toContain("24 km");
+    expect(card.text()).toContain("Broken 1,400 ft");
+  });
+
+  it("says where and how long ago the report was observed", async () => {
+    const { wrapper } = await mountBoard();
+    expect(wrapper.find(".weather__observed").text()).toContain("Observed at YYZ · 19 min ago");
+  });
+
+  it("puts the three fence-side numbers in the phone strip", async () => {
+    const { wrapper } = await mountBoard();
+    const strip = wrapper.find(".wx-strip");
+
+    expect(strip.text()).toContain("16°C");
+    expect(strip.text()).toContain("WNW 6 kt");
+    expect(strip.text()).toContain("24 km");
+  });
+
+  it("flags an overdue report instead of passing it off as fresh", async () => {
+    weather = { ...freshWeather(), ageSeconds: 2 * 3600, stale: true };
+    const { wrapper } = await mountBoard();
+
+    expect(wrapper.find(".weather__warning").text()).toContain("A newer report is overdue");
+    expect(wrapper.find(".wx-strip").text()).toContain("2 h ago");
+  });
+
+  it("shows no weather, rather than old weather, once the report has expired", async () => {
+    weather = {
+      ...freshWeather(),
+      observation: null,
+      ageSeconds: 4 * 3600,
+      stale: true,
+      unavailable: true,
+      error: "latest report is too old to show",
+    };
+    const { wrapper } = await mountBoard();
+
+    expect(wrapper.find(".weather").text()).toContain("No current weather report");
+    expect(wrapper.find(".weather").text()).toContain("YYZ last reported 4 h ago");
+    expect(wrapper.text()).not.toContain("16°C");
+    // On a phone, no report is not worth a line above the list.
+    expect(wrapper.find(".wx-strip").exists()).toBe(false);
+  });
+
+  it("asks for nothing and shows nothing when the server has no weather", async () => {
+    config.weatherEnabled = false;
+    const { wrapper } = await mountBoard();
+
+    const urls = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls.map(([url]) => String(url));
+    expect(urls.some((url) => url.includes("/weather"))).toBe(false);
+    expect(wrapper.find(".weather").exists()).toBe(false);
+    expect(wrapper.find(".wx-strip").exists()).toBe(false);
   });
 });

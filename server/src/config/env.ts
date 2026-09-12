@@ -133,6 +133,19 @@ export const config = {
    * Defaults to the first tracked airport, which is the one the board opens on.
    */
   scheduleAirports: resolveScheduleAirports(),
+
+  /**
+   * METAR weather for the card, from aviationweather.gov. Free and keyless, so it
+   * is on unless switched off - a fresh clone still gets it with no signup.
+   */
+  weatherEnabled: process.env.WEATHER_ENABLED !== "false",
+
+  /**
+   * How often to ask for fresh reports. Stations report hourly, so ten minutes
+   * catches each one soon after it is issued. Floored at five minutes: going
+   * faster buys nothing, because the reports themselves do not change faster.
+   */
+  weatherRefreshMs: Math.max(num(process.env.WEATHER_REFRESH_MS, 10 * 60_000), 5 * 60_000),
 } as const;
 
 export type Config = typeof config;

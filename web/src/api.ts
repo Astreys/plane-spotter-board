@@ -116,6 +116,55 @@ export interface InboundSnapshot {
   counts: Record<string, number>;
 }
 
+/** Chosen on the server from the METAR; the frontend only draws it. */
+export type WeatherIcon =
+  | "clear"
+  | "mostly-clear"
+  | "partly-cloudy"
+  | "mostly-cloudy"
+  | "overcast"
+  | "showers"
+  | "rain"
+  | "snow"
+  | "thunder"
+  | "fog"
+  | "haze";
+
+export interface WeatherObservation {
+  /** When the station observed it. Age counts from here, not from any fetch. */
+  observedAt: string;
+  temperatureC: number | null;
+  dewpointC: number | null;
+  humidityPct: number | null;
+  wind: {
+    directionDeg: number | null;
+    fromCompass: string | null;
+    speedKt: number;
+    gustKt: number | null;
+    variable: boolean;
+    calm: boolean;
+  } | null;
+  visibilityKm: number | null;
+  /** A reported floor: the value means "at least this". */
+  visibilityOrMore: boolean;
+  cloudBase: { cover: "FEW" | "SCT" | "BKN" | "OVC" | "OVX"; baseFt: number } | null;
+  condition: string;
+  icon: WeatherIcon;
+  isDay: boolean;
+  raw: string;
+}
+
+export interface WeatherSnapshot {
+  airport: { icao: string; iata: string };
+  /** Null before the first report, and once the latest is too old to show as current. */
+  observation: WeatherObservation | null;
+  ageSeconds: number | null;
+  stale: boolean;
+  loading: boolean;
+  unavailable: boolean;
+  error: string | null;
+}
+
 export interface CategoryDto {
   id: CategoryId;
   group: GroupId;
@@ -127,6 +176,8 @@ export interface CategoryDto {
 export interface ConfigDto {
   upcomingEnabled: boolean;
   upcomingCategories: CategoryId[];
+  /** False hides the weather strip and card, and nothing asks for weather at all. */
+  weatherEnabled: boolean;
   /** Every upstream we take data from, for the credits line in the footer. */
   sources: Array<{ label: string; url: string }>;
   airports: Array<{
@@ -134,6 +185,11 @@ export interface ConfigDto {
     iata: string;
     name: string;
     city: string;
+    timeZone: string;
+    /** The airport's own site, for the airport card. Null when unknown. */
+    website: string | null;
+    /** Hero artwork path, or null while the frontend draws its own placeholder. */
+    heroImage: string | null;
     tracked: boolean;
     /** Not every tracked airport has an Upcoming board; a schedule costs units. */
     hasSchedule: boolean;
@@ -192,6 +248,13 @@ export async function fetchUpcoming(
   const response = await fetch(apiUrl("/api/airport/" + icao + "/upcoming"), { signal });
   if (!response.ok) throw new Error("upcoming request failed: " + response.status);
   return (await response.json()) as UpcomingSnapshot;
+}
+
+/** Reads the server's weather cache. Only the server talks to aviationweather.gov. */
+export async function fetchWeather(icao: string, signal?: AbortSignal): Promise<WeatherSnapshot> {
+  const response = await fetch(apiUrl(`/api/airport/${icao}/weather`), { signal });
+  if (!response.ok) throw new Error(`weather request failed: ${response.status}`);
+  return (await response.json()) as WeatherSnapshot;
 }
 
 /**
