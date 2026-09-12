@@ -57,6 +57,8 @@ const upcoming: UpcomingSnapshot = {
       number: "CX 828",
       callsign: "CPA828",
       airline: "Cathay Pacific",
+      airlineIcao: "CPA",
+      airlineIata: "CX",
       status: "Expected",
       isCargo: false,
       type: "A35K",
@@ -75,6 +77,8 @@ const upcoming: UpcomingSnapshot = {
       number: "LH 470",
       callsign: "DLH470",
       airline: "Lufthansa",
+      airlineIcao: "DLH",
+      airlineIata: "LH",
       status: "Delayed",
       isCargo: false,
       type: "B748",
@@ -176,7 +180,7 @@ describe("the Upcoming tab", () => {
     await wrapper.findAll("button.tabs__tab")[1]!.trigger("click");
     await flushPromises();
 
-    const flights = wrapper.findAll("li.flight");
+    const flights = wrapper.findAll("tr.flight");
     expect(flights).toHaveLength(2);
     expect(flights[0]!.text()).toContain("Airbus A350-1000");
     expect(flights[0]!.text()).toContain("CX 828");
@@ -184,12 +188,28 @@ describe("the Upcoming tab", () => {
     expect(flights[0]!.text()).toContain("Cathay Pacific");
   });
 
+  it("shows the airline with a mark, and the status as a pill", async () => {
+    const wrapper = await mountApp(baseConfig);
+    await wrapper.findAll("button.tabs__tab")[1]!.trigger("click");
+    await flushPromises();
+
+    const first = wrapper.findAll("tr.flight")[0]!;
+    expect(first.find(".flight__airline").text()).toContain("Cathay Pacific");
+    // No licensed logo source yet, so the mark is a monogram.
+    expect(first.find(".mark__initials").text()).toBe("CP");
+    expect(first.find(".pill").attributes("data-tone")).toBe("expected");
+
+    const second = wrapper.findAll("tr.flight")[1]!;
+    expect(second.find(".pill").attributes("data-tone")).toBe("delayed");
+    expect(second.find(".pill").text()).toBe("Delayed");
+  });
+
   it("badges a rare double decker", async () => {
     const wrapper = await mountApp(baseConfig);
     await wrapper.findAll("button.tabs__tab")[1]!.trigger("click");
     await flushPromises();
 
-    const second = wrapper.findAll("li.flight")[1]!;
+    const second = wrapper.findAll("tr.flight")[1]!;
     expect(second.text()).toContain("Boeing 747-8");
     expect(second.text()).toContain("double deck");
     expect(second.text()).toContain("rare");
@@ -200,8 +220,8 @@ describe("the Upcoming tab", () => {
     await wrapper.findAll("button.tabs__tab")[1]!.trigger("click");
     await flushPromises();
 
-    expect(wrapper.findAll("li.flight")[1]!.text()).toContain("revised");
-    expect(wrapper.findAll("li.flight")[0]!.text()).not.toContain("revised");
+    expect(wrapper.findAll("tr.flight")[1]!.text()).toContain("revised");
+    expect(wrapper.findAll("tr.flight")[0]!.text()).not.toContain("revised");
   });
 
   it("says how much of the schedule it filtered out", async () => {
@@ -253,7 +273,7 @@ describe("the Upcoming tab", () => {
     await flushPromises();
 
     // The flights are still shown, but never silently.
-    expect(wrapper.findAll("li.flight")).toHaveLength(2);
+    expect(wrapper.findAll("tr.flight")).toHaveLength(2);
     expect(wrapper.find(".upcoming__warn--banner").exists()).toBe(true);
     expect(wrapper.text()).toContain("5 hours ago");
   });

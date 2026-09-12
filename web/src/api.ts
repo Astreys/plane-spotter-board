@@ -30,6 +30,9 @@ export interface FlightRoute {
   destination: RouteAirport | null;
   airline: string | null;
   callsignIata: string | null;
+  /** ICAO and IATA airline codes, e.g. "ACA" and "AC". The key a logo wants. */
+  airlineIcao: string | null;
+  airlineIata: string | null;
   arrivesHere: boolean;
 }
 
@@ -51,6 +54,13 @@ export interface InboundAircraft {
   minutesOut: number | null;
   categories: CategoryId[];
   route: FlightRoute | null;
+  /**
+   * Who operates it, from the airframe record or the route. It names aircraft
+   * whose callsign never resolves, which is most general aviation.
+   */
+  operator: string | null;
+  /** ICAO airline code for `operator`, when there is one. */
+  operatorIcao: string | null;
   seenPosSec: number;
 }
 
@@ -60,6 +70,8 @@ export interface UpcomingFlight {
   callsign: string | null;
   airline: string | null;
   status: string | null;
+  airlineIcao: string | null;
+  airlineIata: string | null;
   isCargo: boolean;
   type: string | null;
   model: string | null;

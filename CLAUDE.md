@@ -29,7 +29,7 @@ with the raw code visible.
 
 ```bash
 npm run dev      # API on :8787, frontend on :5173 with /api proxied
-npm test         # 293 tests, server + web
+npm test         # 327 tests, server + web
 npm run build    # typecheck both, compile server, bundle frontend
 ```
 
@@ -154,9 +154,10 @@ Each upstream is a different service with its own limits:
 - **ADS-B aggregators** (adsb.lol / .fi / .one) — the board itself. One shared
   `RateGate` in `server/src/adsb/client.ts`, one request per second across every
   poller. This is the invariant above; do not add a second path to it.
-- **adsbdb.com** — flight routes by callsign. Its own gate in
-  `server/src/flightroute/client.ts`. Looked up in the background and cached, so
-  the poll never waits on it.
+- **adsbdb.com** — two endpoints, one gate in `server/src/flightroute/client.ts`:
+  routes by callsign, and airframes by Mode S address. Both are looked up in the
+  background and cached, so the poll never waits on either. One service, one
+  budget; do not give the aircraft endpoint a gate of its own.
 - **planespotters.net** — photos. Cached proxy in `server/src/routes/photos.ts`.
 
 - **aviationweather.gov** - METAR for the weather card. Its own gate in
@@ -173,6 +174,30 @@ schedule's.
 
 A new upstream gets its own gate. Sharing the aggregators' gate would starve the
 board to feed a decoration.
+
+## Airline identity comes from two places
+
+A row learns its airline from the route lookup (the callsign's trading name) or
+from the airframe's registered operator, and `identityOf()` in
+`web/src/airlines.ts` is the single place that decides between them. The route
+name wins for display because the registry holds legal names — "Porter Airlines
+(Canada) Limited" — which `tidyOperator()` trims.
+
+The airframe lookup matters because most general aviation has no resolvable
+callsign, so the operator is the only name that will ever arrive.
+
+**The airframe also fills in a missing type.** The feed omits the type code often
+enough to matter, and a row without one sits in `OTHER` reading "Unknown type".
+When adsbdb supplies one the poller re-runs `categoriesFor`, so it classifies
+through the same taxonomy as everything else.
+
+**The feed's registration always wins.** adsbdb returns "CA-GKQL" for aircraft
+registered C-GKQL, so its registration is only a fallback.
+
+Enrichment is attached during a poll, so it only appears on a *successful* poll.
+While the aggregators are failing, the board keeps serving its last snapshot and
+no new names attach — which is correct, but worth remembering when a board looks
+oddly anonymous.
 
 ## Route data is approximate
 
