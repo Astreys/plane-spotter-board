@@ -15,9 +15,10 @@ import { TYPE_NAMES, categoriesFor } from "../config/aircraft-types.js";
 import { config } from "../config/env.js";
 import { countByCategory } from "../domain/filters.js";
 import { selectInbound } from "../domain/inbound.js";
-import { arrivesAt } from "../domain/route.js";
+import { arrivesAt, withScheduledOrigin } from "../domain/route.js";
 import type { AircraftResolver } from "../flightroute/aircraft.js";
 import type { RouteResolver } from "../flightroute/resolver.js";
+import type { ScheduleOriginLookup } from "../schedule/poller.js";
 import type { InboundAircraft, InboundSnapshot } from "../types.js";
 
 interface Cached {
@@ -49,6 +50,8 @@ export class AirportPoller extends EventEmitter {
     private readonly log: PollerLogger,
     private readonly routes?: RouteResolver,
     private readonly airframes?: AircraftResolver,
+    /** Today's origins from this airport's schedule, when it has one. */
+    private readonly scheduleOrigin?: ScheduleOriginLookup,
   ) {
     super();
     // SSE clients each add a listener; the default cap of 10 is far too low.
@@ -146,7 +149,8 @@ export class AirportPoller extends EventEmitter {
   private enrich(aircraft: InboundAircraft[]): InboundAircraft[] {
     const routes = this.routes;
     const airframes = this.airframes;
-    if (!routes && !airframes) return aircraft;
+    const scheduleOrigin = this.scheduleOrigin;
+    if (!routes && !airframes && !scheduleOrigin) return aircraft;
 
     const enriched = aircraft.map((ac) => {
       const route = routes?.get(ac.callsign) ?? null;
@@ -178,6 +182,14 @@ export class AirportPoller extends EventEmitter {
       // Only as a fallback: adsbdb returns "CA-GKQL" where the feed says C-GKQL.
       if (!next.registration && record?.registration) {
         next = { ...next, registration: record.registration };
+      }
+
+      // Today's schedule beats a canonical city pair whenever it knows this
+      // flight: the pair is the flight number's usual leg, which is regularly
+      // not the one in the air.
+      const scheduled = scheduleOrigin?.(next.callsign, next.hex) ?? null;
+      if (scheduled) {
+        next = { ...next, route: withScheduledOrigin(next.route, scheduled, this.airport) };
       }
 
       return next;

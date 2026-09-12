@@ -33,6 +33,11 @@ export interface FlightRoute {
   /** ICAO and IATA airline codes, e.g. "ACA" and "AC". The key a logo wants. */
   airlineIcao: string | null;
   airlineIata: string | null;
+  /**
+   * "callsign" is the flight number's canonical city pair, which is often a
+   * different leg; "schedule" is today's arrival from the airport's own schedule.
+   */
+  source: "callsign" | "schedule";
   arrivesHere: boolean;
 }
 

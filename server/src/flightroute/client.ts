@@ -114,6 +114,8 @@ export async function fetchRoute(callsign: string): Promise<RouteLookup> {
           airlineIcao: flightroute.airline?.icao?.trim().toUpperCase() || null,
           airlineIata: flightroute.airline?.iata?.trim().toUpperCase() || null,
           callsignIata: flightroute.callsign_iata?.trim().toUpperCase() || null,
+          // A canonical pair for the flight number, not necessarily today's leg.
+          source: "callsign",
           // Set by the poller, which is the only place that knows the airport.
           arrivesHere: false,
         },

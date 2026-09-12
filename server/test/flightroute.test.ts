@@ -110,6 +110,7 @@ describe("RouteResolver", () => {
     callsignIata: "WS709",
     airlineIcao: "WJA",
     airlineIata: "WS",
+    source: "callsign" as const,
     arrivesHere: false,
   };
 
