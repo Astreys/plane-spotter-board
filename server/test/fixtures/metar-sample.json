@@ -1,0 +1,257 @@
+[
+  {
+    "icaoId": "CYYZ",
+    "receiptTime": "2026-09-11T12:08:15.928Z",
+    "obsTime": 1789128000,
+    "reportTime": "2026-09-11T12:00:00.000Z",
+    "temp": 15,
+    "dewp": 11,
+    "wdir": 300,
+    "wspd": 5,
+    "visib": 15,
+    "altim": 1017.7,
+    "slp": 1017.7,
+    "qcField": 0,
+    "metarType": "METAR",
+    "rawOb": "METAR CYYZ 111200Z 30005KT 15SM FEW250 15/11 A3005 RMK CI1 CI TR SLP177",
+    "lat": 43.679,
+    "lon": -79.629,
+    "elev": 171,
+    "name": "Toronto/Pearson Intl, ON, CA",
+    "cover": "FEW",
+    "clouds": [
+      {
+        "cover": "FEW",
+        "base": 25000
+      }
+    ],
+    "fltCat": "VFR"
+  },
+  {
+    "icaoId": "KJFK",
+    "receiptTime": "2026-09-11T12:54:20.546Z",
+    "obsTime": 1789131060,
+    "reportTime": "2026-09-11T13:00:00.000Z",
+    "temp": 22.8,
+    "dewp": 10,
+    "wdir": 360,
+    "wspd": 9,
+    "visib": "10+",
+    "altim": 1015.3,
+    "slp": 1015.2,
+    "qcField": 4,
+    "metarType": "METAR",
+    "rawOb": "METAR KJFK 111251Z 36009KT 10SM SCT060 BKN140 BKN200 23/10 A2998 RMK AO2 SLP152 T02280100",
+    "lat": 40.6392,
+    "lon": -73.7639,
+    "elev": 3,
+    "name": "New York/JF Kennedy Intl, NY, US",
+    "cover": "BKN",
+    "clouds": [
+      {
+        "cover": "SCT",
+        "base": 6000
+      },
+      {
+        "cover": "BKN",
+        "base": 14000
+      },
+      {
+        "cover": "BKN",
+        "base": 20000
+      }
+    ],
+    "fltCat": "VFR"
+  },
+  {
+    "icaoId": "EGLL",
+    "receiptTime": "2026-09-11T12:54:18.931Z",
+    "obsTime": 1789131000,
+    "reportTime": "2026-09-11T13:00:00.000Z",
+    "temp": 21,
+    "dewp": 11,
+    "wdir": 330,
+    "wspd": 6,
+    "visib": "6+",
+    "altim": 1021,
+    "qcField": 2,
+    "metarType": "METAR",
+    "rawOb": "METAR EGLL 111250Z AUTO 33006KT 280V040 9999 NCD 21/11 Q1021",
+    "lat": 51.477,
+    "lon": -0.461,
+    "elev": 26,
+    "name": "London/Heathrow Intl, EN, GB",
+    "cover": "CLR",
+    "clouds": [],
+    "fltCat": "VFR"
+  },
+  {
+    "icaoId": "ENGM",
+    "receiptTime": "2026-09-11T12:56:16.248Z",
+    "obsTime": 1789131000,
+    "reportTime": "2026-09-11T13:00:00.000Z",
+    "temp": 12,
+    "dewp": 12,
+    "wdir": 200,
+    "wspd": 4,
+    "visib": "6+",
+    "altim": 1013,
+    "qcField": 0,
+    "wxString": "-RA",
+    "metarType": "METAR",
+    "rawOb": "METAR ENGM 111250Z 20004KT 9999 -RA SCT003 OVC010 12/12 Q1013 TEMPO 4000 RA BR BKN004",
+    "lat": 60.201,
+    "lon": 11.08,
+    "elev": 204,
+    "name": "Oslo/Gardermoen Arpt, AK, NO",
+    "cover": "OVC",
+    "clouds": [
+      {
+        "cover": "SCT",
+        "base": 300
+      },
+      {
+        "cover": "OVC",
+        "base": 1000
+      }
+    ],
+    "fltCat": "MVFR"
+  },
+  {
+    "icaoId": "EHAM",
+    "receiptTime": "2026-09-11T12:57:23.226Z",
+    "obsTime": 1789131300,
+    "reportTime": "2026-09-11T13:00:00.000Z",
+    "temp": 19,
+    "dewp": 16,
+    "wdir": 290,
+    "wspd": 10,
+    "visib": "6+",
+    "altim": 1018,
+    "qcField": 16,
+    "wxString": "-SHRA",
+    "metarType": "METAR",
+    "rawOb": "METAR EHAM 111255Z 29010KT 9999 -SHRA FEW011 SCT018 FEW020TCU 19/16 Q1018 NOSIG",
+    "lat": 52.315,
+    "lon": 4.79,
+    "elev": -2,
+    "name": "Amsterdam/Schiphol Arpt, NH, NL",
+    "cover": "FEW",
+    "clouds": [
+      {
+        "cover": "FEW",
+        "base": 1100
+      },
+      {
+        "cover": "SCT",
+        "base": 1800
+      },
+      {
+        "cover": "FEW",
+        "base": 2000
+      }
+    ],
+    "fltCat": "VFR"
+  },
+  {
+    "icaoId": "BIKF",
+    "receiptTime": "2026-09-11T13:03:12.561Z",
+    "obsTime": 1789131600,
+    "reportTime": "2026-09-11T13:00:00.000Z",
+    "temp": 7,
+    "dewp": 3,
+    "wdir": 180,
+    "wspd": 7,
+    "visib": "6+",
+    "altim": 984,
+    "qcField": 0,
+    "wxString": "VCSH",
+    "metarType": "METAR",
+    "rawOb": "METAR BIKF 111300Z 18007KT 9999 VCSH FEW013CB SCT038 BKN070 07/03 Q0984",
+    "lat": 63.987,
+    "lon": -22.614,
+    "elev": 49,
+    "name": "Keflavik Intl, SP, IS",
+    "cover": "BKN",
+    "clouds": [
+      {
+        "cover": "FEW",
+        "base": 1300
+      },
+      {
+        "cover": "SCT",
+        "base": 3800
+      },
+      {
+        "cover": "BKN",
+        "base": 7000
+      }
+    ],
+    "fltCat": "VFR"
+  },
+  {
+    "icaoId": "KSFO",
+    "receiptTime": "2026-09-11T13:00:04.472Z",
+    "obsTime": 1789131360,
+    "reportTime": "2026-09-11T13:00:00.000Z",
+    "temp": 16.1,
+    "dewp": 13.9,
+    "wdir": 280,
+    "wspd": 6,
+    "visib": "10+",
+    "altim": 1014,
+    "slp": 1013.8,
+    "qcField": 4,
+    "metarType": "METAR",
+    "rawOb": "METAR KSFO 111256Z 28006KT 10SM FEW003 BKN009 16/14 A2994 RMK AO2 SLP138 T01610139",
+    "lat": 37.6196,
+    "lon": -122.3656,
+    "elev": 2,
+    "name": "San Francisco Intl, CA, US",
+    "cover": "BKN",
+    "clouds": [
+      {
+        "cover": "FEW",
+        "base": 300
+      },
+      {
+        "cover": "BKN",
+        "base": 900
+      }
+    ],
+    "fltCat": "IFR"
+  },
+  {
+    "icaoId": "CYHZ",
+    "receiptTime": "2026-09-11T12:08:15.377Z",
+    "obsTime": 1789128000,
+    "reportTime": "2026-09-11T12:00:00.000Z",
+    "temp": 14,
+    "dewp": 9,
+    "wdir": 290,
+    "wspd": 16,
+    "wgst": 23,
+    "visib": 15,
+    "altim": 1005.8,
+    "slp": 1005.8,
+    "qcField": 0,
+    "metarType": "METAR",
+    "rawOb": "METAR CYHZ 111200Z 29016G23KT 15SM FEW030 FEW100 14/09 A2970 RMK SC1AC1 SC TR AC TR SLP058 DENSITY ALT 800FT",
+    "lat": 44.8781,
+    "lon": -63.5136,
+    "elev": 136,
+    "name": "Halifax/Stanfield Intl, NS, CA",
+    "cover": "FEW",
+    "clouds": [
+      {
+        "cover": "FEW",
+        "base": 3000
+      },
+      {
+        "cover": "FEW",
+        "base": 10000
+      }
+    ],
+    "fltCat": "VFR"
+  }
+]

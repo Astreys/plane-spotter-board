@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from "vue";
 import { fetchConfig, type ConfigDto } from "./api";
 import { applyFilters, emptyStateText } from "./filter";
 import { useBoard } from "./composables/useBoard";
+import { useWeather } from "./composables/useWeather";
 import AircraftRow from "./components/AircraftRow.vue";
 import AirportCard from "./components/AirportCard.vue";
 import AirportMasthead from "./components/AirportMasthead.vue";
@@ -11,6 +12,8 @@ import NavRail from "./components/NavRail.vue";
 import PopularAirlines from "./components/PopularAirlines.vue";
 import StatusBar from "./components/StatusBar.vue";
 import UpcomingList from "./components/UpcomingList.vue";
+import WeatherCard from "./components/WeatherCard.vue";
+import WeatherStrip from "./components/WeatherStrip.vue";
 
 const config = ref<ConfigDto | null>(null);
 const configError = ref<string | null>(null);
@@ -21,6 +24,17 @@ const showPhotos = ref(readPhotoPreference());
 const tab = ref<"live" | "upcoming">("live");
 
 const board = useBoard(() => icao.value);
+
+/**
+ * One fetch loop feeds both the phone strip and the desktop card, so switching
+ * airport asks once. It reads the server's cache; only the server talks to the
+ * weather service.
+ */
+const weatherEnabled = computed(() => config.value?.weatherEnabled === true);
+const weather = useWeather(
+  () => icao.value,
+  () => weatherEnabled.value,
+);
 
 const trackedAirports = computed(() =>
   (config.value?.airports ?? []).filter((airport) => airport.tracked),
@@ -100,6 +114,8 @@ onMounted(async () => {
       :hero-image="airport?.heroImage ?? null"
       :airports="trackedAirports"
     />
+
+    <WeatherStrip v-if="weatherEnabled" :snapshot="weather.snapshot.value" />
 
     <div class="shell">
       <NavRail
@@ -218,6 +234,12 @@ onMounted(async () => {
         every card pushes a row off the screen, so the rail simply is not there.
       -->
       <aside class="shell__rail">
+        <WeatherCard
+          v-if="weatherEnabled"
+          :snapshot="weather.snapshot.value"
+          :failed="weather.failed.value"
+          :iata="airport?.iata ?? ''"
+        />
         <!--
           website and heroImage are typed non-optional, but a browser holding a
           cached /api/config from before they existed will send neither, so the
