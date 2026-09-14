@@ -238,6 +238,13 @@ beforeEach(() => {
   weather = freshWeather();
   vi.stubGlobal("EventSource", FakeEventSource);
   vi.stubGlobal("IntersectionObserver", undefined);
+  // Desktop width, so the filter box renders; happy-dom cannot be trusted with rem queries.
+  vi.stubGlobal("matchMedia", (media: string) => ({
+    matches: true,
+    media,
+    addEventListener() {},
+    removeEventListener() {},
+  }));
   stubFetch();
 });
 
@@ -456,5 +463,88 @@ describe("the weather", () => {
     expect(urls.some((url) => url.includes("/weather"))).toBe(false);
     expect(wrapper.find(".weather").exists()).toBe(false);
     expect(wrapper.find(".wx-strip").exists()).toBe(false);
+  });
+});
+
+describe("the board filter", () => {
+  type Mounted = Awaited<ReturnType<typeof mountBoard>>["wrapper"];
+
+  async function typeQuery(wrapper: Mounted, value: string): Promise<void> {
+    await wrapper.find(".panel__search-input").setValue(value);
+    await flushPromises();
+  }
+
+  it("narrows the rows to what matches, without a round trip", async () => {
+    const { wrapper } = await mountBoard();
+    const calls = (globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls.length;
+
+    await typeQuery(wrapper, "emirates");
+
+    expect(wrapper.findAll("li.row")).toHaveLength(1);
+    expect(wrapper.findAll("li.row")[0]!.text()).toContain("UAE203");
+    // A filter over the board in memory, not a search: nothing is fetched.
+    expect((globalThis.fetch as ReturnType<typeof vi.fn>).mock.calls.length).toBe(calls);
+  });
+
+  it("says what it filtered for when nothing matches, and offers to clear it", async () => {
+    const { wrapper } = await mountBoard();
+    await typeQuery(wrapper, "lufthansa");
+
+    expect(wrapper.findAll("li.row")).toHaveLength(0);
+    expect(wrapper.text()).toContain("Nothing on this board matches");
+    expect(wrapper.text()).toContain("lufthansa");
+
+    await wrapper.find(".empty__clear").trigger("click");
+    await flushPromises();
+    expect(wrapper.findAll("li.row")).toHaveLength(2);
+  });
+
+  it("does not find a row by a city its route cannot vouch for", async () => {
+    // The Endeavor row's stored pair starts in New York and does not end here, so
+    // the row hides that city - and the filter must not find it by it either.
+    const { wrapper } = await mountBoard();
+
+    await typeQuery(wrapper, "new york");
+    expect(wrapper.findAll("li.row")).toHaveLength(0);
+
+    // Its dimmed codes are on the row, so those still match.
+    await typeQuery(wrapper, "jfk");
+    expect(wrapper.findAll("li.row")).toHaveLength(1);
+  });
+
+  it("is not on screen at phone widths, and hides nothing there", async () => {
+    vi.stubGlobal("matchMedia", (media: string) => ({
+      matches: false,
+      media,
+      addEventListener() {},
+      removeEventListener() {},
+    }));
+    const { wrapper } = await mountBoard();
+
+    expect(wrapper.find(".panel__search-input").exists()).toBe(false);
+    expect(wrapper.findAll("li.row")).toHaveLength(2);
+  });
+
+  it("stops filtering when the window narrows and the box goes away", async () => {
+    // Otherwise rows would vanish on a phone with nothing on screen to explain why.
+    const media = { listener: null as null | ((event: { matches: boolean }) => void) };
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: true,
+      media: query,
+      addEventListener: (_type: string, fn: (event: { matches: boolean }) => void) => {
+        media.listener = fn;
+      },
+      removeEventListener() {},
+    }));
+    const { wrapper } = await mountBoard();
+
+    await typeQuery(wrapper, "emirates");
+    expect(wrapper.findAll("li.row")).toHaveLength(1);
+
+    media.listener?.({ matches: false });
+    await flushPromises();
+
+    expect(wrapper.find(".panel__search-input").exists()).toBe(false);
+    expect(wrapper.findAll("li.row")).toHaveLength(2);
   });
 });

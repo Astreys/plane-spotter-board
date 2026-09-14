@@ -3,9 +3,18 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { fetchUpcoming, type UpcomingFlight, type UpcomingSnapshot } from "../api";
 import { hueFor } from "../airlines";
 import { minutesUntil, originOf, statusLabel, statusTone } from "../upcoming";
+import { filterUpcoming } from "../search";
 import AirlineMark from "./AirlineMark.vue";
 
-const props = defineProps<{ icao: string; timeZone: string | null }>();
+const props = withDefaults(
+  defineProps<{
+    icao: string;
+    timeZone: string | null;
+    /** The board's filter box. Narrows the flights already fetched; asks for nothing. */
+    query?: string;
+  }>(),
+  { query: "" },
+);
 
 const snapshot = ref<UpcomingSnapshot | null>(null);
 const loading = ref(true);
@@ -76,9 +85,12 @@ const agoText = computed(() => {
   return Math.round(hours / 24) + " days ago";
 });
 
+/** The board's filter box, applied to the schedule already fetched. */
+const filtered = computed(() => filterUpcoming(snapshot.value?.flights ?? [], props.query));
+
 /** Group by local day so an overnight window does not read as one long list. */
 const groups = computed(() => {
-  const flights = snapshot.value?.flights ?? [];
+  const flights = filtered.value;
   const out: Array<{ label: string; flights: UpcomingFlight[] }> = [];
   for (const flight of flights) {
     const options: Intl.DateTimeFormatOptions = { weekday: "long", month: "short", day: "numeric" };
@@ -151,7 +163,14 @@ const markHue = (flight: UpcomingFlight): number =>
         Last refreshed {{ agoText }} - this may be out of date.
       </p>
 
-      <table class="fids">
+      <div v-if="!filtered.length" class="upcoming__empty">
+        <p class="upcoming__headline">No scheduled arrival matches “{{ query }}”</p>
+        <p class="upcoming__detail">
+          {{ snapshot.flights.length }} big arrivals are due, and none of them match.
+        </p>
+      </div>
+
+      <table v-else class="fids">
         <thead class="fids__head">
           <tr>
             <th scope="col" class="fids__th fids__th--time">Arrives</th>
@@ -232,6 +251,9 @@ const markHue = (flight: UpcomingFlight): number =>
       </table>
 
       <p class="upcoming__footnote">
+        <template v-if="query && filtered.length">
+          Showing {{ filtered.length }} matching “{{ query }}”.
+        </template>
         {{ snapshot.flights.length }} of {{ snapshot.totalScheduled }} scheduled arrivals in the
         next {{ snapshot.windowHours }} hours are double deck, quad or widebody. Times are the
         operator schedule, not observed.
