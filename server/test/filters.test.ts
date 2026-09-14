@@ -22,6 +22,8 @@ function aircraft(hex: string, categories: CategoryId[]): InboundAircraft {
     minutesOut: 6,
     categories,
     route: null,
+    operator: null,
+    operatorIcao: null,
     seenPosSec: 1,
   };
 }

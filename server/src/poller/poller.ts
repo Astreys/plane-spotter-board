@@ -11,11 +11,14 @@
 import { EventEmitter } from "node:events";
 import { ADSB_HOSTS, ATTRIBUTION, AdsbError, fetchPoint, hostIndex } from "../adsb/client.js";
 import type { Airport } from "../config/airports.js";
+import { TYPE_NAMES, categoriesFor } from "../config/aircraft-types.js";
 import { config } from "../config/env.js";
 import { countByCategory } from "../domain/filters.js";
 import { selectInbound } from "../domain/inbound.js";
-import { arrivesAt } from "../domain/route.js";
+import { arrivesAt, withScheduledOrigin } from "../domain/route.js";
+import type { AircraftResolver } from "../flightroute/aircraft.js";
 import type { RouteResolver } from "../flightroute/resolver.js";
+import type { ScheduleOriginLookup } from "../schedule/poller.js";
 import type { InboundAircraft, InboundSnapshot } from "../types.js";
 
 interface Cached {
@@ -46,6 +49,9 @@ export class AirportPoller extends EventEmitter {
     readonly airport: Airport,
     private readonly log: PollerLogger,
     private readonly routes?: RouteResolver,
+    private readonly airframes?: AircraftResolver,
+    /** Today's origins from this airport's schedule, when it has one. */
+    private readonly scheduleOrigin?: ScheduleOriginLookup,
   ) {
     super();
     // SSE clients each add a listener; the default cap of 10 is far too low.
@@ -92,7 +98,7 @@ export class AirportPoller extends EventEmitter {
         startIndex: this.preferredHost,
       });
 
-      const aircraft = this.withRoutes(selectInbound(result.snapshot.ac, this.airport));
+      const aircraft = this.enrich(selectInbound(result.snapshot.ac, this.airport));
       this.cache = {
         aircraft,
         counts: countByCategory(aircraft),
@@ -135,22 +141,62 @@ export class AirportPoller extends EventEmitter {
   }
 
   /**
-   * Attach whatever routes are already cached, and hand the rest to the resolver
-   * to look up in the background. Deliberately not awaited: a slow route database
-   * must never delay the board, so a newly seen aircraft simply gains its route on
-   * the next tick.
+   * Attach whatever the two adsbdb caches already hold, and hand the rest over to
+   * be looked up in the background. Deliberately not awaited: a slow second
+   * upstream must never delay the board, so a newly seen aircraft gains its route
+   * and its airframe details on the next tick.
    */
-  private withRoutes(aircraft: InboundAircraft[]): InboundAircraft[] {
+  private enrich(aircraft: InboundAircraft[]): InboundAircraft[] {
     const routes = this.routes;
-    if (!routes) return aircraft;
+    const airframes = this.airframes;
+    const scheduleOrigin = this.scheduleOrigin;
+    if (!routes && !airframes && !scheduleOrigin) return aircraft;
 
     const enriched = aircraft.map((ac) => {
-      const route = routes.get(ac.callsign);
-      if (!route) return { ...ac, route: null };
-      return { ...ac, route: { ...route, arrivesHere: arrivesAt(route, this.airport) } };
+      const route = routes?.get(ac.callsign) ?? null;
+      const record = airframes?.get(ac.hex) ?? null;
+
+      let next: InboundAircraft = {
+        ...ac,
+        route: route ? { ...route, arrivesHere: arrivesAt(route, this.airport) } : null,
+        // The airframe's registered operator is usually the better answer: it is
+        // there whether or not the callsign resolved.
+        operator: record?.operator ?? route?.airline ?? null,
+        operatorIcao: record?.operatorIcao ?? route?.airlineIcao ?? null,
+      };
+
+      // The feed leaves the type out often enough to matter, and a row with no
+      // type sits in OTHER reading "Unknown type" even when it is a widebody.
+      // With a type from adsbdb it classifies through the same taxonomy.
+      if (!next.type && record?.type) {
+        next = {
+          ...next,
+          type: record.type,
+          typeName: TYPE_NAMES[record.type] ?? record.model ?? null,
+          categories: categoriesFor({ type: record.type, callsign: next.callsign }),
+        };
+      } else if (!next.typeName && record?.model) {
+        next = { ...next, typeName: record.model };
+      }
+
+      // Only as a fallback: adsbdb returns "CA-GKQL" where the feed says C-GKQL.
+      if (!next.registration && record?.registration) {
+        next = { ...next, registration: record.registration };
+      }
+
+      // Today's schedule beats a canonical city pair whenever it knows this
+      // flight: the pair is the flight number's usual leg, which is regularly
+      // not the one in the air.
+      const scheduled = scheduleOrigin?.(next.callsign, next.hex) ?? null;
+      if (scheduled) {
+        next = { ...next, route: withScheduledOrigin(next.route, scheduled, this.airport) };
+      }
+
+      return next;
     });
 
-    routes.ensure(aircraft.map((ac) => ac.callsign));
+    routes?.ensure(aircraft.map((ac) => ac.callsign));
+    airframes?.ensure(aircraft.map((ac) => ac.hex));
     return enriched;
   }
 

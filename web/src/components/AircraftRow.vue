@@ -63,8 +63,15 @@ const route = computed(() => {
 const from = computed(() => codeOf(route.value?.origin ?? null));
 const to = computed(() => codeOf(route.value?.destination ?? null));
 
-/** Where it started is the part a spotter actually wants; the code alone is terse. */
-const originCity = computed(() => route.value?.origin?.city ?? null);
+/**
+ * Where it started is the part a spotter actually wants, but it is also the part
+ * most likely to be wrong: a route we cannot vouch for is the flight number's
+ * usual leg, not this one. The codes stay, dimmed and marked; the friendly name
+ * is dropped, because "Montréal" reads as a fact in a way "YUL" does not.
+ */
+const originCity = computed(() =>
+  route.value?.arrivesHere ? (route.value.origin?.city ?? route.value.origin?.name ?? null) : null,
+);
 
 /**
  * Spelled out on hover, and used as the accessible label — "CYYZ to CYVR" reads
@@ -76,6 +83,7 @@ const routeLabel = computed(() => {
   const origin = value.origin?.name ?? value.origin?.city ?? from.value;
   const destination = value.destination?.name ?? value.destination?.city ?? to.value;
   const base = `From ${origin} to ${destination}`;
+  if (value.source === "schedule") return `${base}, from today's arrivals schedule.`;
   return value.arrivesHere
     ? base
     : `${base}. This is the scheduled route for callsign ${props.aircraft.callsign ?? ""}`.trim() +

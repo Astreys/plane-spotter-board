@@ -24,6 +24,16 @@ export interface FlightRoute {
   destination: RouteAirport | null;
   airline: string | null;
   callsignIata: string | null;
+  /** ICAO airline code, e.g. "ACA". The key an airline logo lookup wants. */
+  airlineIcao: string | null;
+  /** IATA airline code, e.g. "AC". */
+  airlineIata: string | null;
+  /**
+   * Where the pair came from. "callsign" is adsbdb's canonical city pair for the
+   * flight number, which is often a different leg; "schedule" is today's actual
+   * arrival, taken from the airport's own schedule.
+   */
+  source: "callsign" | "schedule";
   /**
    * True when the scheduled destination is the airport being watched.
    *
@@ -33,6 +43,30 @@ export interface FlightRoute {
    * but marked, because presenting it as this arrival's route would be a lie.
    */
   arrivesHere: boolean;
+}
+
+/**
+ * What adsbdb knows about one airframe, by its Mode S address.
+ *
+ * This fills two gaps the live feed leaves: aircraft it reports with no type
+ * code, which would otherwise sit in OTHER as "Unknown type", and the operator,
+ * which is how an airline reaches a row before a route lookup lands.
+ */
+export interface AircraftRecord {
+  /** ICAO type designator, e.g. "A21N". */
+  type: string | null;
+  /** adsbdb's own words, e.g. "A321 271NXSL". A fallback name, never a code. */
+  model: string | null;
+  manufacturer: string | null;
+  /**
+   * Registration as adsbdb has it. The feed's own registration wins when there is
+   * one: adsbdb returns "CA-GKQL" for aircraft registered C-GKQL.
+   */
+  registration: string | null;
+  /** Registered owner, e.g. "Turkish Airlines". */
+  operator: string | null;
+  /** ICAO code for that operator, e.g. "THY". Often null for private owners. */
+  operatorIcao: string | null;
 }
 
 /** One aircraft on the board. Every optional field really can be missing. */
@@ -65,6 +99,10 @@ export interface InboundAircraft {
   categories: CategoryId[];
   /** Scheduled origin and destination. Null until the lookup lands, or if there is none. */
   route: FlightRoute | null;
+  /** Who operates it, from the airframe record or the route. Null until known. */
+  operator: string | null;
+  /** ICAO airline code for `operator`, when there is one. */
+  operatorIcao: string | null;
   /** Seconds since the position fix, straight from the feed. */
   seenPosSec: number;
 }
@@ -77,6 +115,9 @@ export interface UpcomingFlight {
   airline: string | null;
   /** The operator's own word for it: "Expected", "Delayed", "Arrived". */
   status: string | null;
+  /** ICAO and IATA codes for `airline`, e.g. "ACA" and "AC". */
+  airlineIcao: string | null;
+  airlineIata: string | null;
   isCargo: boolean;
 
   /** ICAO designator, normalised from the vendor's free-text model. */

@@ -81,6 +81,7 @@ export function registerMetaRoutes(app: FastifyInstance, registry: PollerRegistr
       uptimeSec: Math.round(process.uptime()),
       scheduleEnabled: registry.scheduleEnabled,
       routes: registry.routeStats(),
+      aircraft: registry.aircraftStats(),
       weather: registry.weatherStats(),
       pollers,
     });

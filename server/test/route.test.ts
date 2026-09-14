@@ -18,6 +18,9 @@ const route = (from: string, to: string): FlightRoute => ({
   destination: airport(to, null),
   airline: null,
   callsignIata: null,
+  airlineIcao: null,
+  airlineIata: null,
+  source: "callsign",
   arrivesHere: false,
 });
 

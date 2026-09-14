@@ -24,7 +24,7 @@ First data lands within a poll interval (15s). `npm run dev:server` and
 `npm run dev:web` run the halves separately.
 
 ```bash
-npm test        # 293 tests across server and web
+npm test        # 340 tests across server and web
 npm run build   # typecheck both, compile the server, bundle the frontend
 ```
 
@@ -169,6 +169,42 @@ is not the airport being watched, the row dims the route and marks it
 `SCHEDULED`. `arrivesAt()` in
 [`server/src/domain/route.ts`](server/src/domain/route.ts) is the one place that
 decides this, and it is unit tested.
+
+### What the airframe adds
+
+adsbdb also knows the airframe behind a Mode S address, and
+[`flightroute/aircraft.ts`](server/src/flightroute/aircraft.ts) caches that the
+same way: same service, same gate, same rule that a poll never waits on it.
+
+It fills two gaps. The feed often omits the type code, and a row without one sat
+in `OTHER` reading "Unknown type" even when it was a widebody — with a type from
+adsbdb it classifies through the same taxonomy as everything else. And it names
+the registered operator, so an aircraft whose callsign never resolves, which is
+most general aviation, still says who is flying it.
+
+Airline logos are trademarks with no licensed source available to a project like
+this, so an airline is shown as a coloured monogram. `AirlineMark.vue` is the one
+component that decides that, and it already accepts a logo URL, so a licensed
+source would be a one-component change.
+
+### When the schedule knows better
+
+A route from adsbdb is the flight number's canonical city pair, and airlines reuse
+numbers across different legs. ACA744 is stored as Montréal → New York; on the day
+this was written it flew San Francisco → Toronto.
+
+Where an airport has an Upcoming board, the schedule we already fetch is indexed
+by callsign and Mode S address — for every arrival, not just the widebodies the
+board lists — and that origin replaces the canonical pair. A match on the callsign
+alone is refused when the schedule expects a different Mode S address: light
+aircraft do transmit airline callsigns, and a Cessna 172 squawking ACA427 turned
+up on the board while this was being written. `route.source` then
+reads `schedule` rather than `callsign`, and the row can say where the aircraft
+actually came from.
+
+Without a schedule key, or for an aircraft outside its window, the row keeps the
+stored pair but shows only dimmed codes and a `SCHEDULED` mark, with no city
+name: "Montréal" reads as a fact in a way "YUL" does not.
 
 ## Filters
 

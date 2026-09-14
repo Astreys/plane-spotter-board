@@ -11,10 +11,11 @@
  */
 
 import { config } from "../config/env.js";
-import type { FlightRoute, RouteAirport } from "../types.js";
+import type { AircraftRecord, FlightRoute, RouteAirport } from "../types.js";
 import { RateGate } from "../util/rate-gate.js";
 
-const BASE_URL = "https://api.adsbdb.com/v0/callsign";
+const ROUTE_URL = "https://api.adsbdb.com/v0/callsign";
+const AIRCRAFT_URL = "https://api.adsbdb.com/v0/aircraft";
 
 export const ROUTE_ATTRIBUTION = {
   label: "Routes by adsbdb.com",
@@ -83,7 +84,7 @@ export async function fetchRoute(callsign: string): Promise<RouteLookup> {
 
   try {
     return await gate.run(async () => {
-      const response = await fetch(`${BASE_URL}/${encodeURIComponent(trimmed)}`, {
+      const response = await fetch(`${ROUTE_URL}/${encodeURIComponent(trimmed)}`, {
         headers: { "User-Agent": config.userAgent, Accept: "application/json" },
         signal: AbortSignal.timeout(config.requestTimeoutMs),
       });
@@ -110,11 +111,84 @@ export async function fetchRoute(callsign: string): Promise<RouteLookup> {
           origin,
           destination,
           airline: flightroute.airline?.name?.trim() || null,
+          airlineIcao: flightroute.airline?.icao?.trim().toUpperCase() || null,
+          airlineIata: flightroute.airline?.iata?.trim().toUpperCase() || null,
           callsignIata: flightroute.callsign_iata?.trim().toUpperCase() || null,
+          // A canonical pair for the flight number, not necessarily today's leg.
+          source: "callsign",
           // Set by the poller, which is the only place that knows the airport.
           arrivesHere: false,
         },
       };
+    });
+  } catch (error) {
+    return { status: "error", message: (error as Error)?.message ?? "unknown error" };
+  }
+}
+
+/**
+ * The same service's other endpoint: an airframe by its Mode S address.
+ *
+ * It shares the gate above deliberately — one service, one budget — and it is
+ * cheap to ask, because an airframe record never changes and caches for a week.
+ */
+interface RawAircraftResponse {
+  response?:
+    | string
+    | {
+        aircraft?: {
+          type?: string;
+          icao_type?: string;
+          manufacturer?: string;
+          registration?: string;
+          registered_owner?: string;
+          registered_owner_operator_flag_code?: string | null;
+        };
+      };
+}
+
+export type AircraftLookup =
+  | { status: "found"; aircraft: AircraftRecord }
+  /** adsbdb answered and has no record. Cache it: it will not learn this one. */
+  | { status: "unknown" }
+  /** Network or server trouble. Do not cache — try again later. */
+  | { status: "error"; message: string };
+
+/** Look one Mode S address up. Never throws — failure is a value. */
+export async function fetchAircraft(hex: string): Promise<AircraftLookup> {
+  const trimmed = hex.trim().toLowerCase();
+  // A Mode S address is six hex digits. Anything else is not worth a request.
+  if (!/^[0-9a-f]{6}$/.test(trimmed)) return { status: "unknown" };
+
+  try {
+    return await gate.run<AircraftLookup>(async () => {
+      const response = await fetch(`${AIRCRAFT_URL}/${encodeURIComponent(trimmed)}`, {
+        headers: { "User-Agent": config.userAgent, Accept: "application/json" },
+        signal: AbortSignal.timeout(config.requestTimeoutMs),
+      });
+
+      if (response.status === 404 || response.status === 400) return { status: "unknown" };
+      if (!response.ok) return { status: "error", message: `HTTP ${response.status}` };
+
+      const body = (await response.json()) as RawAircraftResponse;
+      // A miss serialises as {"response":"unknown aircraft"} — a string, not an object.
+      if (!body.response || typeof body.response === "string") return { status: "unknown" };
+
+      const raw = body.response.aircraft;
+      if (!raw) return { status: "unknown" };
+
+      const aircraft: AircraftRecord = {
+        type: raw.icao_type?.trim().toUpperCase() || null,
+        model: raw.type?.trim() || null,
+        manufacturer: raw.manufacturer?.trim() || null,
+        registration: raw.registration?.trim().toUpperCase() || null,
+        operator: raw.registered_owner?.trim() || null,
+        operatorIcao: raw.registered_owner_operator_flag_code?.trim().toUpperCase() || null,
+      };
+
+      // A record with no type and no operator tells a row nothing.
+      if (!aircraft.type && !aircraft.operator) return { status: "unknown" };
+      return { status: "found", aircraft };
     });
   } catch (error) {
     return { status: "error", message: (error as Error)?.message ?? "unknown error" };

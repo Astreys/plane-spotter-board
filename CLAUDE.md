@@ -29,7 +29,7 @@ with the raw code visible.
 
 ```bash
 npm run dev      # API on :8787, frontend on :5173 with /api proxied
-npm test         # 293 tests, server + web
+npm test         # 340 tests, server + web
 npm run build    # typecheck both, compile server, bundle frontend
 ```
 
@@ -154,9 +154,10 @@ Each upstream is a different service with its own limits:
 - **ADS-B aggregators** (adsb.lol / .fi / .one) — the board itself. One shared
   `RateGate` in `server/src/adsb/client.ts`, one request per second across every
   poller. This is the invariant above; do not add a second path to it.
-- **adsbdb.com** — flight routes by callsign. Its own gate in
-  `server/src/flightroute/client.ts`. Looked up in the background and cached, so
-  the poll never waits on it.
+- **adsbdb.com** — two endpoints, one gate in `server/src/flightroute/client.ts`:
+  routes by callsign, and airframes by Mode S address. Both are looked up in the
+  background and cached, so the poll never waits on either. One service, one
+  budget; do not give the aircraft endpoint a gate of its own.
 - **planespotters.net** — photos. Cached proxy in `server/src/routes/photos.ts`.
 
 - **aviationweather.gov** - METAR for the weather card. Its own gate in
@@ -174,6 +175,30 @@ schedule's.
 A new upstream gets its own gate. Sharing the aggregators' gate would starve the
 board to feed a decoration.
 
+## Airline identity comes from two places
+
+A row learns its airline from the route lookup (the callsign's trading name) or
+from the airframe's registered operator, and `identityOf()` in
+`web/src/airlines.ts` is the single place that decides between them. The route
+name wins for display because the registry holds legal names — "Porter Airlines
+(Canada) Limited" — which `tidyOperator()` trims.
+
+The airframe lookup matters because most general aviation has no resolvable
+callsign, so the operator is the only name that will ever arrive.
+
+**The airframe also fills in a missing type.** The feed omits the type code often
+enough to matter, and a row without one sits in `OTHER` reading "Unknown type".
+When adsbdb supplies one the poller re-runs `categoriesFor`, so it classifies
+through the same taxonomy as everything else.
+
+**The feed's registration always wins.** adsbdb returns "CA-GKQL" for aircraft
+registered C-GKQL, so its registration is only a fallback.
+
+Enrichment is attached during a poll, so it only appears on a *successful* poll.
+While the aggregators are failing, the board keeps serving its last snapshot and
+no new names attach — which is correct, but worth remembering when a board looks
+oddly anonymous.
+
 ## Route data is approximate
 
 `arrivesHere` on a route is false whenever the scheduled destination is not the
@@ -181,6 +206,27 @@ airport being watched, and that is common — the route database stores one
 canonical city pair per callsign. Never render a route as "where this aircraft
 came from" without checking it. `arrivesAt()` in `server/src/domain/route.ts` is
 the single place that decides, and the UI dims and marks the rest.
+
+**The schedule outranks the callsign.** Where an airport has an Upcoming board,
+`SchedulePoller.originFor()` gives today's actual origin by callsign or Mode S
+address, and `withScheduledOrigin()` replaces the canonical pair with it.
+
+**A callsign match alone is not proof.** Light aircraft do transmit airline
+callsigns — a Cessna 172 squawking ACA427 appeared on the board the day this was
+written — so a callsign match is refused when the schedule names a different Mode
+S address for that flight. The address wins, because it identifies the airframe.
+`route.source` says which you are looking at: `"schedule"` is this arrival,
+`"callsign"` is the flight number's usual leg. The index covers **every**
+scheduled arrival, not just the big ones the board lists — correcting a
+narrowbody matters just as much, and it is the same response, already paid for.
+
+The case that prompted it: adsbdb returns Montréal → New York for ACA744, which
+that day flew San Francisco → Toronto.
+
+**Only a route that ends here may show a city name.** A pair we cannot vouch for
+keeps its dimmed codes and its `SCHEDULED` mark but loses the friendly name —
+"Montréal" reads as a fact in a way "YUL" does not. Airports with no schedule
+key, and aircraft outside the schedule window, stay in that quieter mode.
 
 ## Schedule refresh uses a heartbeat, not a long timer
 
