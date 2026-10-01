@@ -532,7 +532,9 @@ describe("the board filter", () => {
       matches: true,
       media: query,
       addEventListener: (_type: string, fn: (event: { matches: boolean }) => void) => {
-        media.listener = fn;
+        // The theme toggle listens too, for prefers-color-scheme; only the width
+        // query is the one this test means to change.
+        if (query.includes("min-width")) media.listener = fn;
       },
       removeEventListener() {},
     }));

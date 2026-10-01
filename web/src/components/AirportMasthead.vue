@@ -3,6 +3,7 @@ import { computed } from "vue";
 import { useClock } from "../composables/useClock";
 import { formatAirportTime } from "../time";
 import AirportHero from "./AirportHero.vue";
+import ThemeToggle from "./ThemeToggle.vue";
 
 const props = defineProps<{
   /** Selected airport, ICAO. Empty until /api/config lands. */
@@ -77,6 +78,8 @@ function select(event: Event): void {
           <small v-if="clock.zone" class="masthead__zone">{{ clock.zone }}</small>
         </span>
       </div>
+
+      <ThemeToggle class="masthead__theme" />
     </div>
   </header>
 </template>
@@ -211,6 +214,11 @@ function select(event: Event): void {
   font-size: 0.62rem;
   font-weight: 500;
   color: rgb(255 255 255 / 0.62);
+}
+
+/* Last in the row, so the clock keeps its place as the band's anchor. */
+.masthead__theme {
+  margin-left: 0.6rem;
 }
 
 /* Narrow phones: the date is the first thing to go, the clock the last. */

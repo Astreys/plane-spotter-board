@@ -24,8 +24,18 @@
   color-scheme: dark;
 }
 
+/*
+ * Dark is the default above. The light palette applies when the device asks for
+ * it - unless the reader has explicitly chosen dark - and again when they have
+ * explicitly chosen light.
+ *
+ * The two blocks repeat the same values because a media query and an attribute
+ * selector cannot be folded into one rule, and this project has no CSS
+ * preprocessor. Edit both, and keep THEME_COLORS in src/theme.ts in step with
+ * --bg; there is a test for that pair.
+ */
 @media (prefers-color-scheme: light) {
-  :root {
+  :root:not([data-theme="dark"]) {
     --bg: #f6f8fb;
     --surface: #ffffff;
     --surface-2: #eef1f6;
@@ -42,6 +52,24 @@
 
     color-scheme: light;
   }
+}
+
+:root[data-theme="light"] {
+    --bg: #f6f8fb;
+    --surface: #ffffff;
+    --surface-2: #eef1f6;
+    --line: #dde3ec;
+    --text: #101822;
+    --muted: #62707f;
+    --muted-2: #8a97a6;
+    --accent: #1f6feb;
+    --accent-ink: #ffffff;
+    --good: #1a8a5a;
+    --warn: #a86711;
+    --bad: #c2323f;
+    --rare: #a67611;
+
+    color-scheme: light;
 }
 
 * {
