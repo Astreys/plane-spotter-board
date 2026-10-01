@@ -47,8 +47,9 @@ const { choice, label, cycle } = useTheme();
 
 <style scoped>
 /*
- * The masthead band stays dark in both schemes, so this button is coloured for
- * the band rather than from the theme tokens.
+ * Mixed from currentColor rather than hard-coded white, so the button follows the
+ * band it sits on: a faint light tint over the dusk sky, a faint dark one over
+ * daylight. No second rule needed for the light theme.
  */
 .theme {
   flex: 0 0 auto;
@@ -57,17 +58,17 @@ const { choice, label, cycle } = useTheme();
   width: 2rem;
   height: 2rem;
   padding: 0;
-  border: 1px solid rgb(255 255 255 / 0.16);
+  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
   border-radius: 999px;
-  background: rgb(255 255 255 / 0.06);
+  background: color-mix(in srgb, currentColor 8%, transparent);
   color: inherit;
   cursor: pointer;
   transition: background 120ms ease, border-color 120ms ease;
 }
 
 .theme:hover {
-  background: rgb(255 255 255 / 0.14);
-  border-color: rgb(255 255 255 / 0.28);
+  background: color-mix(in srgb, currentColor 16%, transparent);
+  border-color: color-mix(in srgb, currentColor 30%, transparent);
 }
 
 .theme__icon {
@@ -75,7 +76,8 @@ const { choice, label, cycle } = useTheme();
   height: 1.05rem;
 }
 
+/* A sun wants to look warm against either sky; --warn is tuned per theme already. */
 .theme[data-choice="light"] .theme__icon {
-  color: #ffd27d;
+  color: var(--warn);
 }
 </style>

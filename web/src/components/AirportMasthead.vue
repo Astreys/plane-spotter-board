@@ -85,10 +85,53 @@ function select(event: Event): void {
 </template>
 
 <style scoped>
+/*
+ * The band follows the theme with the hero behind it: pale ink over a dusk sky,
+ * dark ink over a daylight one. Same two-selector pattern as main.css.
+ */
 .masthead {
+  --band-ink: #f2f6fb;
+  --band-ink-dim: rgb(255 255 255 / 0.62);
+  --band-rule: rgb(255 255 255 / 0.18);
+  --band-scrim: linear-gradient(
+    90deg,
+    rgb(6 12 22 / 0.92) 0%,
+    rgb(6 12 22 / 0.72) 42%,
+    rgb(6 12 22 / 0.35) 78%,
+    rgb(6 12 22 / 0.55) 100%
+  );
+
   position: relative;
   isolation: isolate;
-  color: #f2f6fb;
+  color: var(--band-ink);
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .masthead {
+    --band-ink: #0d1722;
+    --band-ink-dim: rgb(13 23 34 / 0.66);
+    --band-rule: rgb(13 23 34 / 0.18);
+    --band-scrim: linear-gradient(
+      90deg,
+      rgb(248 250 253 / 0.9) 0%,
+      rgb(248 250 253 / 0.68) 42%,
+      rgb(248 250 253 / 0.26) 78%,
+      rgb(248 250 253 / 0.5) 100%
+    );
+  }
+}
+
+:root[data-theme="light"] .masthead {
+  --band-ink: #0d1722;
+  --band-ink-dim: rgb(13 23 34 / 0.66);
+  --band-rule: rgb(13 23 34 / 0.18);
+  --band-scrim: linear-gradient(
+    90deg,
+    rgb(248 250 253 / 0.9) 0%,
+    rgb(248 250 253 / 0.68) 42%,
+    rgb(248 250 253 / 0.26) 78%,
+    rgb(248 250 253 / 0.5) 100%
+  );
 }
 
 /*
@@ -98,13 +141,7 @@ function select(event: Event): void {
 .masthead__scrim {
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    90deg,
-    rgb(6 12 22 / 0.92) 0%,
-    rgb(6 12 22 / 0.72) 42%,
-    rgb(6 12 22 / 0.35) 78%,
-    rgb(6 12 22 / 0.55) 100%
-  );
+  background: var(--band-scrim);
 }
 
 .masthead__inner {
@@ -170,7 +207,7 @@ function select(event: Event): void {
 .masthead__names {
   min-width: 0;
   flex: 1 1 auto;
-  border-left: 1px solid rgb(255 255 255 / 0.18);
+  border-left: 1px solid var(--band-rule);
   margin-left: 0.3rem;
   padding-left: 0.75rem;
 }
@@ -188,7 +225,7 @@ function select(event: Event): void {
 .masthead__tagline {
   margin: 0;
   font-size: 0.72rem;
-  color: rgb(255 255 255 / 0.62);
+  color: var(--band-ink-dim);
 }
 
 .masthead__clock {
@@ -201,7 +238,7 @@ function select(event: Event): void {
 
 .masthead__date {
   font-size: 0.68rem;
-  color: rgb(255 255 255 / 0.62);
+  color: var(--band-ink-dim);
 }
 
 .masthead__time {
@@ -213,7 +250,7 @@ function select(event: Event): void {
 .masthead__zone {
   font-size: 0.62rem;
   font-weight: 500;
-  color: rgb(255 255 255 / 0.62);
+  color: var(--band-ink-dim);
 }
 
 /* Last in the row, so the clock keeps its place as the band's anchor. */
