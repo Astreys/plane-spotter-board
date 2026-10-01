@@ -29,7 +29,7 @@ with the raw code visible.
 
 ```bash
 npm run dev      # API on :8787, frontend on :5173 with /api proxied
-npm test         # 381 tests, server + web
+npm test         # 397 tests, server + web
 npm run build    # typecheck both, compile server, bundle frontend
 ```
 
@@ -91,6 +91,12 @@ licensed source for airline marks, so `PopularAirlines` uses coloured monograms.
 Hero artwork is generated from the ICAO code by `AirportHero.vue` until there is
 real art. Dropping in a real image is one field: set `heroImage` on the airport
 in `server/src/config/airports.ts` and it flows through `/api/config`.
+
+**The generated band follows the theme** - dusk on the dark one, daylight on the
+light one - and the masthead's ink and scrim follow with it, through `--band-*`
+properties set by the same two-selector pattern main.css uses. A real photograph
+would not: it is one image for both schemes, so pick one that works on each, or
+the scrim will be doing all the work.
 
 ## The board filter is not a flight search
 
