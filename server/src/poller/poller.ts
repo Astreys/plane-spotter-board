@@ -12,18 +12,21 @@ import { EventEmitter } from "node:events";
 import { ADSB_HOSTS, ATTRIBUTION, AdsbError, fetchPoint, hostIndex } from "../adsb/client.js";
 import type { Airport } from "../config/airports.js";
 import { TYPE_NAMES, categoriesFor } from "../config/aircraft-types.js";
+import { landingDirectionsFor } from "../config/runways.js";
 import { config } from "../config/env.js";
 import { countByCategory } from "../domain/filters.js";
 import { selectInbound } from "../domain/inbound.js";
+import { FlowTracker, inferLandingFlow } from "../domain/flow.js";
 import { arrivesAt, withScheduledOrigin } from "../domain/route.js";
 import type { AircraftResolver } from "../flightroute/aircraft.js";
 import type { RouteResolver } from "../flightroute/resolver.js";
 import type { ScheduleOriginLookup } from "../schedule/poller.js";
-import type { InboundAircraft, InboundSnapshot } from "../types.js";
+import type { InboundAircraft, InboundSnapshot, LandingFlow } from "../types.js";
 
 interface Cached {
   aircraft: InboundAircraft[];
   counts: Record<string, number>;
+  landing: LandingFlow | null;
   totalTracked: number;
   fetchedAt: number;
   host: string;
@@ -41,6 +44,8 @@ export class AirportPoller extends EventEmitter {
   private consecutiveFailures = 0;
   private lastError: string | null = null;
   private preferredHost = 0;
+  /** Smooths the landing direction across polls; see FlowTracker. */
+  private readonly flow = new FlowTracker();
   private timer: NodeJS.Timeout | null = null;
   private stopped = false;
   private inFlight = false;
@@ -99,9 +104,20 @@ export class AirportPoller extends EventEmitter {
       });
 
       const aircraft = this.enrich(selectInbound(result.snapshot.ac, this.airport));
+      // Read off the aircraft themselves: the ones about to land are lined up on
+      // the runway, so their track is the direction in use.
+      const landing = this.flow.update(
+        inferLandingFlow(
+          aircraft,
+          landingDirectionsFor(this.airport.icao),
+          this.airport.elevationFt,
+        ),
+      );
+
       this.cache = {
         aircraft,
         counts: countByCategory(aircraft),
+        landing,
         totalTracked: result.snapshot.ac?.length ?? 0,
         fetchedAt: result.fetchedAt,
         host: result.host,
@@ -227,6 +243,7 @@ export class AirportPoller extends EventEmitter {
         totalTracked: 0,
         aircraft: [],
         counts: countByCategory([]),
+        landing: null,
       };
     }
 
@@ -241,6 +258,7 @@ export class AirportPoller extends EventEmitter {
       totalTracked: this.cache.totalTracked,
       aircraft: this.cache.aircraft,
       counts: this.cache.counts,
+      landing: this.cache.landing,
     };
   }
 }

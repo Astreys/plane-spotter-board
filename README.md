@@ -24,7 +24,7 @@ First data lands within a poll interval (15s). `npm run dev:server` and
 `npm run dev:web` run the halves separately.
 
 ```bash
-npm test        # 360 tests across server and web
+npm test        # 381 tests across server and web
 npm run build   # typecheck both, compile the server, bundle the frontend
 ```
 
@@ -146,6 +146,22 @@ is in use and so which end of the field to stand at.
 Stations report hourly, so the card always says how old its report is. Past 90
 minutes it is marked stale; past three hours the card shows nothing rather than
 presenting old weather as current.
+
+## Which way the airport is landing
+
+The board works out the runway direction in use and says, for example, **"Landing
+northeast · 05/06 — approaches from the southwest"**. The second half is the part
+worth having: it is where to stand.
+
+It is read from the aircraft themselves. One a minute from touchdown is lined up
+on the centreline, so its track is the landing direction; tracks that match no
+runway, such as an aircraft still being vectored, are ignored rather than averaged
+in. Nothing is inferred from the wind, and when traffic is too thin to tell, the
+board says nothing at all rather than guessing.
+
+Runway headings live in [`server/src/config/runways.ts`](server/src/config/runways.ts),
+generated from OurAirports and stored as *true* headings, because that is what
+ADS-B track is measured against.
 
 ## Where a flight came from
 

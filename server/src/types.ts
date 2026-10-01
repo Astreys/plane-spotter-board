@@ -172,6 +172,32 @@ export interface UpcomingSnapshot {
   unitsRemaining: number | null;
 }
 
+/**
+ * Which way the airport is landing, read off the aircraft themselves.
+ *
+ * Null whenever the sky cannot say — too little traffic, or nothing lined up with
+ * a runway. Null must render as silence: sending a spotter to the wrong side of
+ * an airport is worse than telling them nothing.
+ */
+export interface LandingFlow {
+  /** True heading aircraft fly when landing this way. */
+  headingDeg: number;
+  /** What a local calls it: "05/06", "23/24", "27". */
+  label: string;
+  /** Every runway end pointing this way; left and right are one direction. */
+  idents: string[];
+  /** Compass point of the landing direction, e.g. "NE". */
+  compass: string;
+  /** The same in words, for a sentence: "northeast". */
+  words: string;
+  /** The side approaches come from, which is where to stand: "southwest". */
+  approachFrom: string;
+  /** How many aircraft agreed. */
+  sample: number;
+  /** "firm" when an aircraft committed to a runway settled it, with no tie. */
+  confidence: "firm" | "likely";
+}
+
 export interface SnapshotSource {
   /** Aggregator host that served the current data. */
   host: string;
@@ -203,6 +229,8 @@ export interface InboundSnapshot {
   aircraft: InboundAircraft[];
   /** How many inbound aircraft fall in each category. Drives the chip badges. */
   counts: Record<string, number>;
+  /** Which way the airport is landing, or null when the sky cannot say. */
+  landing: LandingFlow | null;
 }
 
 /** The icon the weather card draws. Chosen here, so the frontend ships no METAR knowledge. */
