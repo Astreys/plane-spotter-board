@@ -29,7 +29,7 @@ with the raw code visible.
 
 ```bash
 npm run dev      # API on :8787, frontend on :5173 with /api proxied
-npm test         # 360 tests, server + web
+npm test         # 381 tests, server + web
 npm run build    # typecheck both, compile server, bundle frontend
 ```
 
@@ -115,6 +115,41 @@ whenever the box is hidden. Hiding the box with CSS alone would leave a query
 typed on a wide window still filtering the list after it narrows, with nothing on
 screen to explain the missing rows. `useMediaQuery` is what lets the filter
 switch off with the box.
+
+## Which way the airport is landing
+
+Nobody publishes the runway in use for free, but it is written in the sky: an
+aircraft a minute from touchdown is lined up on the centreline, so its ground
+track *is* the landing direction. `domain/flow.ts` reads it off the board.
+
+**Headings in `config/runways.ts` are true, not magnetic.** Runway numbers are
+magnetic heading over ten, and Toronto's variation is about 10 degrees, so a
+table in the wrong frame is out by a whole designation. ADS-B reports track
+relative to true north, so the two compare directly. Pearson's 05, 06L and 06R
+all share a true heading of 047 — they are parallel, and the numbers only differ
+because variation drifted between the decades they were named. One direction,
+labelled "05/06", because a spotter stands in one place for all three.
+
+**Aircraft close to landing settle it.** Those further out are consulted only
+when none are close, since they may still be turning onto the approach.
+
+**The alignment tolerance is tight (15 degrees) on purpose.** Runway directions
+sit about 90 degrees apart, so a loose tolerance makes half the compass count as
+"lined up": at 25 degrees an aircraft mid-vector on 336 was read as landing on
+Pearson's 33 (317 true).
+
+**Nothing is inferred from wind.** Wind says what an airport would prefer; noise
+rules and traffic routinely override it, and a guess dressed as an observation is
+worse than silence.
+
+**Null renders as silence.** At 3am with one helicopter about, the direction is
+not knowable, and sending someone to the wrong side of an airport is worse than
+telling them nothing. `FlowTracker` keeps the answer steady — a new direction must
+survive consecutive polls before it is adopted, and a quiet spell holds the last
+one for ten minutes rather than blinking out.
+
+An airport in `airports.ts` with no entry in `runways.ts` simply never reports a
+direction.
 
 ## Non-goals for v1
 
