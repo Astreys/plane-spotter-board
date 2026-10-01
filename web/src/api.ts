@@ -113,6 +113,24 @@ export interface Attribution {
   note: string;
 }
 
+/**
+ * Which way the airport is landing, read off the aircraft themselves. Null
+ * whenever the sky cannot say, and null must render as silence.
+ */
+export interface LandingFlow {
+  headingDeg: number;
+  /** What a local calls it: "05/06". */
+  label: string;
+  idents: string[];
+  compass: string;
+  /** The same in words: "northeast". */
+  words: string;
+  /** The side approaches come from, which is where to stand. */
+  approachFrom: string;
+  sample: number;
+  confidence: "firm" | "likely";
+}
+
 export interface InboundSnapshot {
   airport: {
     icao: string;
@@ -131,6 +149,7 @@ export interface InboundSnapshot {
   totalTracked: number;
   aircraft: InboundAircraft[];
   counts: Record<string, number>;
+  landing: LandingFlow | null;
 }
 
 /** Chosen on the server from the METAR; the frontend only draws it. */
