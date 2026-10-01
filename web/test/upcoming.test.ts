@@ -148,6 +148,13 @@ beforeEach(() => {
   FakeEventSource.instances = [];
   vi.stubGlobal("EventSource", FakeEventSource);
   vi.stubGlobal("IntersectionObserver", undefined);
+  // Desktop width, so the filter box renders; happy-dom cannot be trusted with rem queries.
+  vi.stubGlobal("matchMedia", (media: string) => ({
+    matches: true,
+    media,
+    addEventListener() {},
+    removeEventListener() {},
+  }));
 });
 
 afterEach(() => {
@@ -325,5 +332,45 @@ describe("the Upcoming tab", () => {
     await flushPromises();
 
     expect(wrapper.text()).toContain("upcoming request failed");
+  });
+});
+
+describe("the board filter on the schedule", () => {
+  async function openUpcoming() {
+    const wrapper = await mountApp(baseConfig);
+    await wrapper.findAll("button.tabs__tab")[1]!.trigger("click");
+    await flushPromises();
+    return wrapper;
+  }
+
+  it("narrows the arrivals table and says what it matched", async () => {
+    const wrapper = await openUpcoming();
+
+    await wrapper.find(".panel__search-input").setValue("lufthansa");
+    await flushPromises();
+
+    const rows = wrapper.findAll("tr.flight");
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.text()).toContain("LH 470");
+    expect(wrapper.text()).toContain("Showing 1 matching");
+  });
+
+  it("finds a flight number typed without its space", async () => {
+    const wrapper = await openUpcoming();
+
+    await wrapper.find(".panel__search-input").setValue("cx828");
+    await flushPromises();
+
+    expect(wrapper.findAll("tr.flight")).toHaveLength(1);
+  });
+
+  it("says so when no scheduled arrival matches", async () => {
+    const wrapper = await openUpcoming();
+
+    await wrapper.find(".panel__search-input").setValue("qantas");
+    await flushPromises();
+
+    expect(wrapper.findAll("tr.flight")).toHaveLength(0);
+    expect(wrapper.text()).toContain("No scheduled arrival matches");
   });
 });

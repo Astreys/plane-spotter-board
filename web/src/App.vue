@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { fetchConfig, type ConfigDto } from "./api";
 import { applyFilters, emptyStateText } from "./filter";
+import { filterInbound } from "./search";
 import { useBoard } from "./composables/useBoard";
+import { useMediaQuery } from "./composables/useMediaQuery";
 import { useWeather } from "./composables/useWeather";
 import AircraftRow from "./components/AircraftRow.vue";
 import AirportCard from "./components/AirportCard.vue";
@@ -61,9 +63,59 @@ watch(showTabs, (has) => {
   if (!has) tab.value = "live";
 });
 
-const visible = computed(() =>
+/**
+ * The filter box narrows whatever the chips left. It only ever narrows the board
+ * already in memory - it is not a flight search and never asks the server.
+ *
+ * It exists only at widths where the box is on screen. A query typed on a wide
+ * window must not keep hiding rows after the window narrows and the box goes
+ * away, so `activeQuery` is empty whenever the box is hidden.
+ */
+const query = ref("");
+const wide = useMediaQuery("(min-width: 47.5rem)");
+const activeQuery = computed(() => (wide.value ? query.value.trim() : ""));
+const searchInput = ref<HTMLInputElement | null>(null);
+
+// A query describes one airport's traffic, not the next one's.
+watch(icao, () => {
+  query.value = "";
+});
+
+const chipFiltered = computed(() =>
   applyFilters(board.aircraft.value, board.selected.value, config.value?.categories ?? []),
 );
+
+const visible = computed(() => filterInbound(chipFiltered.value, activeQuery.value));
+
+/** The chips left aircraft on the board, and the filter box then hid every one. */
+const searchHidesAll = computed(
+  () => activeQuery.value !== "" && chipFiltered.value.length > 0 && visible.value.length === 0,
+);
+
+function clearQuery(): void {
+  query.value = "";
+}
+
+/**
+ * "/" focuses the box and Escape clears it. Never while typing somewhere else, and
+ * never when the box is not on screen.
+ */
+function onKeydown(event: KeyboardEvent): void {
+  if (!wide.value) return;
+  const target = event.target as HTMLElement | null;
+  const typing =
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement ||
+    target?.isContentEditable === true;
+
+  if (event.key === "/" && !typing && !event.ctrlKey && !event.metaKey && !event.altKey) {
+    event.preventDefault();
+    searchInput.value?.focus();
+  } else if (event.key === "Escape" && target === searchInput.value && query.value) {
+    clearQuery();
+  }
+}
 
 const emptyText = computed(() =>
   emptyStateText(board.selected.value, config.value?.categories ?? []),
@@ -102,6 +154,9 @@ onMounted(async () => {
     configError.value = (error as Error).message;
   }
 });
+
+onMounted(() => window.addEventListener("keydown", onKeydown));
+onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown));
 </script>
 
 <template>
@@ -174,6 +229,25 @@ onMounted(async () => {
             </div>
           </div>
 
+          <!-- Desktop widths only; `wide` also switches the filter itself off. -->
+          <div v-if="wide" class="panel__search">
+            <input
+              ref="searchInput"
+              v-model="query"
+              type="search"
+              class="panel__search-input"
+              :placeholder="
+                tab === 'live'
+                  ? 'Filter this board — flight, airline, type, registration'
+                  : 'Filter these arrivals — flight, airline, city, type'
+              "
+              aria-label="Filter this board"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <kbd v-if="!query" class="panel__search-key" aria-hidden="true">/</kbd>
+          </div>
+
           <StatusBar
             v-if="tab === 'live'"
             :connection="board.connection.value"
@@ -202,6 +276,7 @@ onMounted(async () => {
         <UpcomingList
           v-else-if="tab === 'upcoming'"
           :icao="icao"
+          :query="activeQuery"
           :time-zone="airport?.timeZone ?? board.snapshot.value?.airport.timeZone ?? null"
         />
 
@@ -213,6 +288,17 @@ onMounted(async () => {
             :show-photos="showPhotos"
           />
         </ul>
+
+        <div v-else-if="searchHidesAll" class="empty">
+          <p class="empty__headline">Nothing on this board matches “{{ activeQuery }}”</p>
+          <p class="empty__detail">
+            {{ chipFiltered.length }}
+            {{ chipFiltered.length === 1 ? "aircraft is" : "aircraft are" }} inbound, but none
+            of them match.
+            <button type="button" class="empty__clear" @click="clearQuery">Clear the filter</button>
+            to see them.
+          </p>
+        </div>
 
         <div v-else class="empty">
           <p class="empty__headline">{{ emptyText }}</p>
@@ -553,5 +639,48 @@ onMounted(async () => {
   .tabs {
     display: none;
   }
+}
+
+/*
+ * The filter box. Rendered only at desktop widths - see `wide` in the script,
+ * which switches the filter off along with the box.
+ */
+.panel__search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.panel__search-input {
+  width: 100%;
+  min-height: 2.2rem;
+  padding: 0 2.2rem 0 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.82rem;
+}
+
+.panel__search-input::placeholder {
+  color: var(--muted-2);
+}
+
+.panel__search-input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.panel__search-key {
+  position: absolute;
+  right: 0.75rem;
+  padding: 0 0.35rem;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--muted);
+  pointer-events: none;
 }
 </style>

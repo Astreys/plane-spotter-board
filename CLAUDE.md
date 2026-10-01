@@ -29,7 +29,7 @@ with the raw code visible.
 
 ```bash
 npm run dev      # API on :8787, frontend on :5173 with /api proxied
-npm test         # 340 tests, server + web
+npm test         # 360 tests, server + web
 npm run build    # typecheck both, compile server, bundle frontend
 ```
 
@@ -92,6 +92,24 @@ Hero artwork is generated from the ICAO code by `AirportHero.vue` until there is
 real art. Dropping in a real image is one field: set `heroImage` on the airport
 in `server/src/config/airports.ts` and it flows through `/api/config`.
 
+## The board filter is not a flight search
+
+The spec rules out flight search, and the filter box keeps to that: `search.ts`
+only narrows the aircraft or scheduled arrivals already on screen, the way the
+chips do, and never asks the server for anything. It cannot find a flight the
+board is not already showing.
+
+**It only matches what a row can vouch for.** A route that does not end here has
+its city name hidden, so the filter must not find a row by that city either —
+codes yes, names only when `arrivesHere`. Keep `inboundHaystack()` in step with
+what `AircraftRow.vue` is willing to show.
+
+**It exists only at desktop widths**, and `activeQuery` in `App.vue` is empty
+whenever the box is hidden. Hiding the box with CSS alone would leave a query
+typed on a wide window still filtering the list after it narrows, with nothing on
+screen to explain the missing rows. `useMediaQuery` is what lets the filter
+switch off with the box.
+
 ## Non-goals for v1
 
 Multiple airports on screen at once, accounts, saved filters, notifications,
@@ -147,6 +165,7 @@ adding a type code is still a one-file change.
 First match wins in `MODEL_PATTERNS`, so a specific variant must precede its
 family. An unmapped model is reported in `unrecognisedModels` rather than being
 silently dropped.
+
 ## Upstreams and their gates
 
 Each upstream is a different service with its own limits:
@@ -159,7 +178,6 @@ Each upstream is a different service with its own limits:
   background and cached, so the poll never waits on either. One service, one
   budget; do not give the aircraft endpoint a gate of its own.
 - **planespotters.net** — photos. Cached proxy in `server/src/routes/photos.ts`.
-
 - **aviationweather.gov** - METAR for the weather card. Its own gate in
   `server/src/weather/client.ts`; one request covers every airport, every ten
   minutes. `weather/metar.ts` is the one place that turns METAR codes into words,
@@ -210,15 +228,15 @@ the single place that decides, and the UI dims and marks the rest.
 **The schedule outranks the callsign.** Where an airport has an Upcoming board,
 `SchedulePoller.originFor()` gives today's actual origin by callsign or Mode S
 address, and `withScheduledOrigin()` replaces the canonical pair with it.
+`route.source` says which you are looking at: `"schedule"` is this arrival,
+`"callsign"` is the flight number's usual leg. The index covers **every**
+scheduled arrival, not just the big ones the board lists — correcting a
+narrowbody matters just as much, and it is the same response, already paid for.
 
 **A callsign match alone is not proof.** Light aircraft do transmit airline
 callsigns — a Cessna 172 squawking ACA427 appeared on the board the day this was
 written — so a callsign match is refused when the schedule names a different Mode
 S address for that flight. The address wins, because it identifies the airframe.
-`route.source` says which you are looking at: `"schedule"` is this arrival,
-`"callsign"` is the flight number's usual leg. The index covers **every**
-scheduled arrival, not just the big ones the board lists — correcting a
-narrowbody matters just as much, and it is the same response, already paid for.
 
 The case that prompted it: adsbdb returns Montréal → New York for ACA744, which
 that day flew San Francisco → Toronto.

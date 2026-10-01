@@ -24,7 +24,7 @@ First data lands within a poll interval (15s). `npm run dev:server` and
 `npm run dev:web` run the halves separately.
 
 ```bash
-npm test        # 340 tests across server and web
+npm test        # 360 tests across server and web
 npm run build   # typecheck both, compile the server, bundle the frontend
 ```
 
@@ -218,6 +218,17 @@ either; `Widebody + Freighter` shows only aircraft that are both.
 
 Unknown type codes are never dropped. They land in **Other** with the raw code
 visible, so they can be classified later.
+
+### The filter box
+
+On a desktop-width window a filter box sits under the board's heading. It narrows
+the aircraft or scheduled arrivals already on screen by flight number, callsign,
+airline, type, registration or origin — every word must match, accents are
+ignored, and "AC744" finds "AC 744". Press `/` to focus it and Escape to clear it.
+
+It is a filter, not a flight search: it never asks the server for anything, so it
+cannot find a flight the board is not already showing. It is not shown on phones,
+where boards are short and the chips already narrow them.
 
 ## Attribution and terms
 
