@@ -284,7 +284,8 @@ back on its own:
 tailscale funnel status
 ```
 
-Expect `https://spotter.tail649e75.ts.net` proxying to `127.0.0.1:8787`. If it is
+Expect `https://<your-machine>.ts.net` proxying to `127.0.0.1:8787` - your own
+funnel hostname, which this repo deliberately does not name. If it is
 empty, re-open it:
 
 ```bash
@@ -305,7 +306,7 @@ local frontend on :5173, which you do not need when the real one is on Netlify.
 is that it works from a phone on mobile data:
 
 ```bash
-curl https://spotter.tail649e75.ts.net/api/health
+curl https://<your-machine>.ts.net/api/health
 ```
 
 ### What breaks, and why
