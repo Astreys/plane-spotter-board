@@ -283,6 +283,8 @@ board tells you whether to pick up a camera. Nothing beyond that.
 
 ## Using this project
 
+Built by Sasha Chernyavsky ([@Astreys](https://github.com/Astreys)).
+
 Licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE.md). Read it,
 run it, change it, fork it, teach from it, lift a piece of it — for any
 noncommercial purpose, and please do. That is what it is public for.

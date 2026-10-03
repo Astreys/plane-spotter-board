@@ -1,4 +1,4 @@
-Copyright 2026 Astreys (https://github.com/Astreys/plane-spotter-board)
+Copyright 2026 Sasha Chernyavsky (https://github.com/Astreys/plane-spotter-board)
 
 Plane Spotter Board is licensed under the **PolyForm Noncommercial License
 1.0.0**, reproduced in full below.
@@ -22,7 +22,7 @@ Two things the licence does not cover, because they are not mine to license:
 The airport artwork in `web/public/airports/` is AI-generated for this project
 and is covered by this licence along with the code.
 
-Required Notice: Copyright 2026 Astreys (https://github.com/Astreys/plane-spotter-board)
+Required Notice: Copyright 2026 Sasha Chernyavsky (https://github.com/Astreys/plane-spotter-board)
 
 ---
 
