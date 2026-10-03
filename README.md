@@ -6,11 +6,21 @@ A live board of aircraft inbound to an airport, built to answer one question:
 Not a flight tracker, not a booking tool. One airport, one list, filterable by
 airframe — quads, double deckers, widebodies, freighters, whatever is rare.
 
+A live instance is at <https://plane-spotter-board.netlify.app>. The frontend is
+hosted; the API behind it runs on a laptop over a Tailscale Funnel, so the board
+is sometimes in its error state. That is a hosting choice, not a design one — see
+[Running the API from your own machine](#running-the-api-from-your-own-machine).
+
+Licensed for noncommercial use: free to read, fork and run, commercial use by
+arrangement. See [Using this project](#using-this-project).
+
 See [`plane spotter board SPEC.md`](plane%20spotter%20board%20SPEC.md) for the
 decisions behind it. Read it before changing anything; update it when a decision
 changes.
 
 ## Running it
+
+Node 20 or newer. No account, no API key, nothing to sign up for:
 
 ```bash
 npm install
@@ -248,10 +258,45 @@ where boards are short and the chips already narrow them.
 
 ## Attribution and terms
 
-Non-commercial use only. The UI credits the aggregators, planespotters.net and aviationweather.gov,
-and the server sends an identifying `User-Agent`. Keep both if you fork this.
+Everything on the board comes from someone else's generosity, and each source
+has its own terms:
 
-Arrival estimates are not a schedule and this is not for navigation.
+| Source | What it gives | Terms |
+| --- | --- | --- |
+| [adsb.lol](https://adsb.lol), [adsb.fi](https://adsb.fi), [adsb.one](https://adsb.one) | the aircraft themselves | community feeder networks, noncommercial |
+| [adsbdb.com](https://www.adsbdb.com) | routes by callsign, airframes by Mode S address | free, noncommercial |
+| [planespotters.net](https://www.planespotters.net) | aircraft photographs | free API, noncommercial, attribution required |
+| [aviationweather.gov](https://aviationweather.gov) | METAR observations | US government, public domain |
+| [AeroDataBox](https://aerodatabox.com) | today's scheduled arrivals | free tier, 600 units a month, optional |
+
+The UI credits them on screen and the server sends an identifying `User-Agent`.
+Keep both if you fork this. They are the condition the free tiers exist on, and a
+fork that strips them is spending someone else's goodwill.
+
+No airline or airport marks are used anywhere. There is no licensed source for
+airline logos, so airlines appear as coloured monograms, and the airport artwork
+in `web/public/airports/` is AI-generated for this project. The footer says this
+is not any airport's own site, at every width.
+
+**Arrival estimates are not a schedule, and none of this is for navigation.** The
+board tells you whether to pick up a camera. Nothing beyond that.
+
+## Using this project
+
+Licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE.md). Read it,
+run it, change it, fork it, teach from it, lift a piece of it — for any
+noncommercial purpose, and please do. That is what it is public for.
+
+Commercial use is not covered by that licence. If you want to build a business on
+this, or on a piece of it, [open an issue](https://github.com/Astreys/plane-spotter-board/issues)
+and we will agree terms. The answer is not going to be no.
+
+Three things make that line less arbitrary than it looks. Most of the data
+upstream is noncommercial itself, so a paid product built on it would be
+borrowing against someone else's free tier. The photographs belong to the people
+who took them. And the parts actually worth having — the inbound rules, the
+runway-in-use inference, the layout ladder — took far longer to get right than
+they look, and I would like to know where they end up.
 
 ## Deploying
 
@@ -261,8 +306,10 @@ what it would cost to put it there.
 ## Running the API from your own machine
 
 The frontend lives on Netlify; the API runs wherever you point it. Right now that
-is a laptop, reached over a Tailscale Funnel. Here is the whole loop after a
-reboot.
+is a laptop, reached over a Tailscale Funnel — which is how this instance happens
+to be hosted, not something the project needs. The API is an ordinary Node process
+and runs anywhere that will keep it alive; [DEPLOY.md](DEPLOY.md) covers the
+alternatives and what they cost. Here is the whole loop after a reboot.
 
 ### After restarting the computer
 

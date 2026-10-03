@@ -92,6 +92,16 @@ Hero artwork is generated from the ICAO code by `AirportHero.vue` until there is
 real art. Dropping in a real image is one field: set `heroImage` on the airport
 in `server/src/config/airports.ts` and it flows through `/api/config`.
 
+**A real image ships as WebP.** The band renders at most 16rem tall, so a 2 MB
+PNG buys nothing and costs the phone a second. Nothing on this machine encodes
+WebP - `convert` on Windows is the filesystem tool, not ImageMagick - so use
+sharp through npx, which needs **absolute** paths or it reports "No input files":
+
+```bash
+cd web/public/airports
+npx --yes sharp-cli -i "$PWD/cyyz-hero.png" -o "$PWD" -f webp -q 80 resize 1600
+```
+
 **The generated band follows the theme** - dusk on the dark one, daylight on the
 light one - and the masthead's ink and scrim follow with it, through `--band-*`
 properties set by the same two-selector pattern main.css uses. A real photograph
