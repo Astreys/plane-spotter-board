@@ -117,6 +117,12 @@ function onKeydown(event: KeyboardEvent): void {
   }
 }
 
+/**
+ * Which way the airport is landing. Null is silence, never a guess - sending
+ * someone to the wrong side of an airport is worse than telling them nothing.
+ */
+const landing = computed(() => board.snapshot.value?.landing ?? null);
+
 const emptyText = computed(() =>
   emptyStateText(board.selected.value, config.value?.categories ?? []),
 );
@@ -193,6 +199,14 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown));
                   Arriving at {{ airport.name }} ({{ airport.iata }})
                 </template>
                 <template v-else>Loading airport</template>
+              </p>
+              <p v-if="tab === 'live' && landing" class="panel__landing">
+                <span class="panel__landing-main">
+                  Landing {{ landing.words }} · {{ landing.label }}
+                </span>
+                <span class="panel__landing-hint">
+                  approaches from the {{ landing.approachFrom }}
+                </span>
               </p>
             </div>
 
@@ -449,6 +463,21 @@ onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown));
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.panel__landing {
+  margin: 0.2rem 0 0;
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+
+.panel__landing-main {
+  color: var(--text);
+  font-weight: 550;
+}
+
+.panel__landing-hint {
+  color: var(--muted-2);
 }
 
 .panel__actions {

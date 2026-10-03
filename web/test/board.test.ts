@@ -72,6 +72,16 @@ const snapshot: InboundSnapshot = {
   source: { host: "https://api.adsb.lol", attribution: config.attribution },
   totalTracked: 42,
   counts: { WIDEBODY: 1, OTHER: 1, FREIGHTER: 0, RARE: 1 },
+  landing: {
+    headingDeg: 47,
+    label: "05/06",
+    idents: ["05", "06L", "06R"],
+    compass: "NE",
+    words: "northeast",
+    approachFrom: "southwest",
+    sample: 2,
+    confidence: "firm",
+  },
   aircraft: [
     {
       hex: "4bb279",
@@ -335,6 +345,25 @@ describe("the board", () => {
     expect(wrapper.text()).toContain("Watching 42 aircraft within 50 nm");
   });
 
+  it("says which way the airport is landing, and which side to stand on", async () => {
+    const { wrapper } = await mountBoard();
+    const line = wrapper.find(".panel__landing");
+
+    expect(line.text()).toContain("Landing northeast");
+    expect(line.text()).toContain("05/06");
+    // The half that answers "where do I go": approaches come from the far side.
+    expect(line.text()).toContain("approaches from the southwest");
+  });
+
+  it("says nothing at all when the sky cannot say", async () => {
+    // Null is a real answer: a guess would send someone to the wrong fence.
+    const { wrapper, source } = await mountBoard();
+    source.emit("snapshot", { ...snapshot, landing: null });
+    await flushPromises();
+
+    expect(wrapper.find(".panel__landing").exists()).toBe(false);
+  });
+
   it("reports how fresh the data is", async () => {
     const { wrapper } = await mountBoard();
     expect(wrapper.find(".status").text()).toMatch(/updated (just now|\d+s ago)/);
@@ -532,7 +561,9 @@ describe("the board filter", () => {
       matches: true,
       media: query,
       addEventListener: (_type: string, fn: (event: { matches: boolean }) => void) => {
-        media.listener = fn;
+        // The theme toggle listens too, for prefers-color-scheme; only the width
+        // query is the one this test means to change.
+        if (query.includes("min-width")) media.listener = fn;
       },
       removeEventListener() {},
     }));
