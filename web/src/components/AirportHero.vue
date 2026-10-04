@@ -161,6 +161,14 @@ const tower = computed(() => {
 
 .hero__image {
   object-fit: cover;
+  /*
+   * Centred. The band is a wide letterbox, so the first instinct is to crop low,
+   * where the terminal and the aircraft are - but these images are composed for
+   * it, with the horizon already near the middle, and pulling down cut the sky
+   * the scrim needs to stay legible. A photograph framed differently would want
+   * its own value here; that is what this property is for.
+   */
+  object-position: 50% 50%;
 }
 
 .hero__skyline {

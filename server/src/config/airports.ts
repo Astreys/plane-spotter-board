@@ -20,9 +20,13 @@ export interface Airport {
    */
   website?: string;
   /**
-   * Hero artwork under web/public, e.g. "/airports/cyyz.webp". Unset everywhere
-   * for now — the frontend draws a placeholder band from the ICAO code until
-   * there is real artwork, so adding one here is the whole change.
+   * Hero artwork under web/public, e.g. "/airports/cyyz-hero.webp". Unset leaves
+   * the frontend drawing a placeholder band from the ICAO code instead, so adding
+   * one here is the whole change — it flows through /api/config to AirportHero.
+   *
+   * The three that exist are AI-generated impressions of the field rather than
+   * photographs: no licence to track, and one image for both themes. A real
+   * photograph has to work on the dark band and the light one alike.
    */
   heroImage?: string;
 }
@@ -38,6 +42,7 @@ export const AIRPORTS: readonly Airport[] = [
     elevationFt: 569,
     timeZone: "America/Toronto",
     website: "https://www.torontopearson.com",
+    heroImage: "/airports/cyyz-hero.webp",
   },
   {
     icao: "CYYC",
@@ -71,6 +76,7 @@ export const AIRPORTS: readonly Airport[] = [
     elevationFt: 13,
     timeZone: "America/New_York",
     website: "https://www.jfkairport.com",
+    heroImage: "/airports/kjfk-hero.webp",
   },
   {
     icao: "EGLL",
@@ -82,6 +88,7 @@ export const AIRPORTS: readonly Airport[] = [
     elevationFt: 83,
     timeZone: "Europe/London",
     website: "https://www.heathrow.com",
+    heroImage: "/airports/egll-hero.webp",
   },
 ];
 

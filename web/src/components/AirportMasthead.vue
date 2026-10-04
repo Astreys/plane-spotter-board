@@ -30,7 +30,7 @@ function select(event: Event): void {
 </script>
 
 <template>
-  <header class="masthead">
+  <header class="masthead" :class="{ 'masthead--photo': heroImage }">
     <AirportHero :seed="modelValue || iata || 'unknown'" :image="heroImage" />
     <div class="masthead__scrim" aria-hidden="true"></div>
 
@@ -155,6 +155,15 @@ function select(event: Event): void {
   min-height: 4.9rem;
   padding: 0.7rem var(--shell-gutter);
   padding-top: max(0.7rem, env(safe-area-inset-top));
+}
+
+/*
+ * A real photograph is worth more room than the generated band, which only ever
+ * had to carry a gradient. Scaled with the viewport so it stays a band on a wide
+ * screen instead of turning into a poster.
+ */
+.masthead--photo .masthead__inner {
+  min-height: clamp(8rem, 18vw, 16rem);
 }
 
 .masthead__mark {
